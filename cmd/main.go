@@ -2,44 +2,83 @@ package main
 
 import (
 	"fmt"
-	"subd/internal/btree"
+	"subd/internal/db"
 	"time"
 )
 
 func main() {
+	database := db.NewDB()
+
+	database.CreateTable(
+		"users",
+		map[string]interface{}{
+			"name": "TEXT",
+			"age":  "INTEGER",
+			"job":  "TEXT",
+		},
+	)
+
 	start := time.Now()
 
-	b := btree.NewTree(btree.DefaultMinItems)
-	b.Put("vasya", map[string]interface{}{"age": 30, "class": "child"})
-	b.Put("anton", map[string]interface{}{"age": 29, "class": "parent"})
-	b.Put("gandon", map[string]interface{}{"age": 10, "class": "adult"})
-	b.Put("vasya", map[string]interface{}{"age": 31, "class": "child"})
-	for j := 0; j < btree.DefaultMinItems*200; j++ {
-		b.Put("vasya", map[string]interface{}{"age": 30, "class": "child"})
-		// fmt.Println(j)
+	database.Insert("users", map[string]interface{}{
+		"name": "vasya",
+		"age":  30,
+		"job":  "clown",
+	})
+
+	database.Insert("users", map[string]interface{}{
+		"name": "andrey",
+		"age":  10,
+		"job":  "child",
+	})
+
+	database.Insert("users", map[string]interface{}{
+		"name": "anton",
+		"age":  50,
+		"job":  "ded",
+	})
+
+	database.Insert("users", map[string]interface{}{
+		"name": "vasya",
+		"age":  32,
+		"job":  "cook",
+	})
+
+	database.Insert("users", map[string]interface{}{
+		"name": "ilya",
+		"age":  14,
+		"job":  "child",
+	})
+
+	database.Insert("users", map[string]interface{}{
+		"name": "vasya",
+		"age":  14,
+		"job":  "ded",
+	})
+
+	for i := 0; i < 2500000; i++ {
+		database.Insert("users", map[string]interface{}{
+			"name": "pasha",
+			"age":  18,
+			"job":  "student",
+		})
 	}
 
 	elapsed := time.Since(start)
-	fmt.Printf("insert 2 560 000 took %s", elapsed)
+	fmt.Printf("insert took %s", elapsed)
+
+	c1 := db.NewComparator("name", "pasha", "eq")
+	c2 := db.NewComparator("age", 18, "le")
 
 	start = time.Now()
 
-	c := btree.Comparator{
-		FieldName: "age",
-		Operation: "lt",
-		Value:     31,
-	}
-	c1 := btree.Comparator{
-		FieldName: "class",
-		Operation: "eq",
-		Value:     "adult",
-	}
-	items := b.FindByValue([]btree.Comparator{c, c1})
-	for _, i := range items {
+	data := database.SelectWhere("users", []db.Comparator{c1, c2})
+	for _, d := range data {
 		fmt.Println("\n")
-		fmt.Println(*i)
+		fmt.Println(d)
 	}
 
 	elapsed = time.Since(start)
 	fmt.Printf("search took %s", elapsed)
+
 }

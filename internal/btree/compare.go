@@ -12,9 +12,8 @@ type Comparator struct {
 	Operation string
 }
 
-func (c Comparator) compare(item *Item) bool {
-	value := item.value.(map[string]interface{})[c.FieldName]
-
+func (c Comparator) compare(itemValue interface{}) bool {
+	value := itemValue.(map[string]interface{})[c.FieldName]
 	switch c.Operation {
 	case "eq":
 		if value == c.Value {
