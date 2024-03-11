@@ -1,7 +1,8 @@
 package btree
 
 // operations:
-// "eq" =
+// "eq" ==
+// "neq" !=
 // "lt" <
 // "le" <=
 // "gt" >
@@ -17,6 +18,11 @@ func (c Comparator) compare(itemValue interface{}) bool {
 	switch c.Operation {
 	case "eq":
 		if value == c.Value {
+			return true
+		}
+
+	case "neq":
+		if value != c.Value {
 			return true
 		}
 
