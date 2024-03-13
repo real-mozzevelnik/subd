@@ -14,8 +14,13 @@ func (db *DB) CreateTable(name string, schema map[string]interface{}) {
 	db.tables[name] = newTable(name, schema)
 }
 
-func (db *DB) GetSchema(name string) map[string]interface{} {
+func (db *DB) GetTableSchema(name string) map[string]interface{} {
 	return db.tables[name].schema
+}
+
+func (db *DB) DropTable(name string) {
+	db.tables[name].drop()
+	delete(db.tables, name)
 }
 
 func (db *DB) Select(tableName string) []map[string]interface{} {

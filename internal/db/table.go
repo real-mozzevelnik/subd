@@ -7,18 +7,33 @@ import (
 )
 
 type Table struct {
-	schema map[string]interface{}
-	tree   *btree.Tree
-	name   string
+	schema  map[string]interface{}
+	indexes map[string]*Index
+	tree    *btree.Tree
+	name    string
 }
 
 func newTable(name string, schema map[string]interface{}) *Table {
 	return &Table{
-		name:   name,
-		schema: schema,
-		tree:   btree.New(128),
+		name:    name,
+		schema:  schema,
+		tree:    btree.New(btree.DefaultBTreeDegree),
+		indexes: nil,
 	}
 }
+
+func (t *Table) drop() {
+	t.deleteData()
+}
+
+// func (t *Table) newIndex(fieldName string) {
+// 	t.indexes[fieldName].name = fieldName
+// 	t.indexes[fieldName].tree = btree.New(btree.DefaultBTreeDegree)
+// 	tableData := t.selectData()
+// 	for _, row := range tableData {
+// 		t.indexes[fieldName].tree.Put(btree.KeyType())
+// 	}
+// }
 
 func (t *Table) selectData() []map[string]interface{} {
 	rows := make([]map[string]interface{}, 0)
@@ -44,7 +59,7 @@ func (t *Table) selectDataWhere(cmp []Comparator) []map[string]interface{} {
 }
 
 func (t *Table) insertData(data map[string]interface{}) {
-	rowId := uuid.New().String()
+	rowId := uuid.NewString()
 	t.tree.Put(btree.KeyType(rowId), data)
 }
 

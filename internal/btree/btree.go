@@ -1,7 +1,8 @@
 package btree
 
 const (
-	freelistSize = 32
+	DefaultBTreeDegree = 128
+	freelistSize       = 32
 )
 
 type Tree struct {
