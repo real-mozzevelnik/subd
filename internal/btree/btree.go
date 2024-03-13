@@ -30,6 +30,13 @@ func (t *Tree) GetByKey(key KeyType) *pair {
 	return t.root.getByKey(key)
 }
 
+func (t *Tree) GetByKeyWithOperation(key KeyType, operation string) []*pair {
+	if t.root == nil {
+		return nil
+	}
+	return t.root.getByKeyWithOperation(key, operation)
+}
+
 func (t *Tree) GetByValue(cmp []Comparator) []*pair {
 	return t.root.getByValue(cmp)
 }

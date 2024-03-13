@@ -6,7 +6,8 @@ import (
 )
 
 // operations:
-// "eq" =
+// "eq" ==
+// "neq" !=
 // "lt" <
 // "le" <=
 // "gt" >
@@ -26,7 +27,7 @@ func (c Comparator) toBTreeComparator() btree.Comparator {
 }
 
 func NewComparator(fieldName string, value interface{}, operation string) Comparator {
-	availableOperations := []string{"eq", "le", "lt", "ge", "gt"}
+	availableOperations := []string{"eq", "neq", "le", "lt", "ge", "gt"}
 	inOperations := false
 	for _, op := range availableOperations {
 		if operation == op {
@@ -34,7 +35,7 @@ func NewComparator(fieldName string, value interface{}, operation string) Compar
 		}
 	}
 	if !inOperations {
-		fmt.Println("available operations: eq, le, lt, ge, gt")
+		fmt.Println("available operations: eq, neq, le, lt, ge, gt")
 		return Comparator{}
 	}
 

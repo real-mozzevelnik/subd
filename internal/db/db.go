@@ -29,3 +29,11 @@ func (db *DB) SelectWhere(tableName string, cmp []Comparator) []map[string]inter
 func (db *DB) Insert(tableName string, data map[string]interface{}) {
 	db.tables[tableName].insertData(data)
 }
+
+func (db *DB) Delete(tableName string) {
+	db.tables[tableName].deleteData()
+}
+
+func (db *DB) DeleteWhere(tableName string, cmp []Comparator) {
+	db.tables[tableName].deleteDataWhere(cmp)
+}

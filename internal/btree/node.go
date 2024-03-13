@@ -80,6 +80,43 @@ func (c *children) pop() *node {
 	return n
 }
 
+func (n *node) getByKeyWithOperation(key KeyType, operation string) []*pair {
+	items := make([]*pair, 0)
+
+	for _, item := range n.inodes {
+		if operation == "neq" {
+			if item.Key != key {
+				items = append(items, &item)
+			}
+		} else if operation == "lt" {
+			if item.Key < key {
+				items = append(items, &item)
+			}
+		} else if operation == "le" {
+			if item.Key <= key {
+				items = append(items, &item)
+			}
+		} else if operation == "gt" {
+			if item.Key > key {
+				items = append(items, &item)
+			}
+		} else if operation == "ge" {
+			if item.Key >= key {
+				items = append(items, &item)
+			}
+		}
+
+	}
+
+	for _, child := range n.children {
+		if child != nil {
+			items = append(items, child.getByKeyWithOperation(key, operation)...)
+		}
+	}
+
+	return items
+}
+
 func (n *node) getByKey(key KeyType) *pair {
 	found, i := n.inodes.search(key)
 	if found {
@@ -103,8 +140,9 @@ func (n *node) getByValue(cmp []Comparator) []*pair {
 
 				isOk := true
 				for _, copmarator := range cmp {
-					if !copmarator.compare(it.Value) {
+					if !copmarator.compare(it.Value.(map[string]interface{})[copmarator.FieldName]) {
 						isOk = false
+						break
 					}
 				}
 				if isOk {
@@ -114,8 +152,9 @@ func (n *node) getByValue(cmp []Comparator) []*pair {
 		case map[string]interface{}:
 			isOk := true
 			for _, copmarator := range cmp {
-				if !copmarator.compare(item.Value) {
+				if !copmarator.compare(item.Value.(map[string]interface{})[copmarator.FieldName]) {
 					isOk = false
+					break
 				}
 			}
 			if isOk {

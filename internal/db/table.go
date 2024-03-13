@@ -49,11 +49,16 @@ func (t *Table) insertData(data map[string]interface{}) {
 }
 
 func (t *Table) deleteData() {
-
+	t.tree.RemoveByValue([]btree.Comparator{})
 }
 
-func (t *Table) deleteDataWhere() {
+func (t *Table) deleteDataWhere(cmp []Comparator) {
+	comparators := make([]btree.Comparator, 0)
+	for _, c := range cmp {
+		comparators = append(comparators, c.toBTreeComparator())
+	}
 
+	t.tree.RemoveByValue(comparators)
 }
 
 func (t *Table) updateData() {

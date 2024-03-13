@@ -14,7 +14,7 @@ type Comparator struct {
 }
 
 func (c Comparator) compare(itemValue interface{}) bool {
-	value := itemValue.(map[string]interface{})[c.FieldName]
+	value := itemValue
 	switch c.Operation {
 	case "eq":
 		if value == c.Value {
