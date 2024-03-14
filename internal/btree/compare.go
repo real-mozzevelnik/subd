@@ -7,6 +7,7 @@ package btree
 // "le" <=
 // "gt" >
 // "ge" >=
+// "in" in
 type Comparator struct {
 	FieldName string
 	Value     interface{}
@@ -72,6 +73,12 @@ func (c Comparator) compare(itemValue interface{}) bool {
 			if value.(float64) >= c.Value.(float64) {
 				return true
 			}
+		}
+
+	case "in":
+		_, ok := c.Value.(map[KeyType]interface{})[itemValue]
+		if ok {
+			return true
 		}
 
 	}

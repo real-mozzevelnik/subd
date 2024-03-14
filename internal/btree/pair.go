@@ -1,6 +1,8 @@
 package btree
 
-type KeyType string
+import "fmt"
+
+type KeyType any
 
 type ValueType any
 
@@ -9,11 +11,11 @@ type pair struct {
 	Value ValueType
 }
 
-func (key KeyType) lessThan(other KeyType) bool {
-	return key < other
+func keyLessThan(key, other KeyType) bool {
+	return fmt.Sprint(key) < fmt.Sprint(other)
 }
 
-func (key KeyType) equalTo(other KeyType) bool {
+func keyEqualTo(key, other KeyType) bool {
 	return key == other
 }
 

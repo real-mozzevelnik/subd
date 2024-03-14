@@ -23,11 +23,19 @@ func (db *DB) DropTable(name string) {
 	delete(db.tables, name)
 }
 
-func (db *DB) Select(tableName string) []map[string]interface{} {
+func (db *DB) CreateIndex(tableName, fieldName string) {
+	db.tables[tableName].newIndex(fieldName)
+}
+
+func (db *DB) DropIndex(tableName, fieldName string) {
+	db.tables[tableName].dropIndex(fieldName)
+}
+
+func (db *DB) Select(tableName string) []*Result {
 	return db.tables[tableName].selectData()
 }
 
-func (db *DB) SelectWhere(tableName string, cmp []Comparator) []map[string]interface{} {
+func (db *DB) SelectWhere(tableName string, cmp []Comparator) []*Result {
 	return db.tables[tableName].selectDataWhere(cmp)
 }
 

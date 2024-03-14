@@ -30,9 +30,9 @@ func (n *node) free() {
 
 func (in inode) search(key KeyType) (bool, int) {
 	i := sort.Search(len(in), func(i int) bool {
-		return key.lessThan(in[i].Key)
+		return keyLessThan(key, in[i].Key)
 	})
-	if i > 0 && key.equalTo(in[i-1].Key) {
+	if i > 0 && keyEqualTo(key, in[i-1].Key) {
 		return true, i - 1
 	}
 	return false, i
@@ -84,28 +84,21 @@ func (n *node) getByKeyWithOperation(key KeyType, operation string) []*pair {
 	items := make([]*pair, 0)
 
 	for _, item := range n.inodes {
-		if operation == "neq" {
-			if item.Key != key {
-				items = append(items, &item)
-			}
-		} else if operation == "lt" {
-			if item.Key < key {
-				items = append(items, &item)
-			}
-		} else if operation == "le" {
-			if item.Key <= key {
-				items = append(items, &item)
-			}
-		} else if operation == "gt" {
-			if item.Key > key {
-				items = append(items, &item)
-			}
-		} else if operation == "ge" {
-			if item.Key >= key {
+		cmp := Comparator{
+			Value:     key,
+			Operation: operation,
+		}
+		if cmp.compare(item.Key) {
+			switch item.Value.(type) {
+			case []interface{}:
+				for _, v := range item.Value.([]interface{}) {
+					i := newPair(item.Key, v)
+					items = append(items, &i)
+				}
+			default:
 				items = append(items, &item)
 			}
 		}
-
 	}
 
 	for _, child := range n.children {
@@ -160,6 +153,17 @@ func (n *node) getByValue(cmp []Comparator) []*pair {
 			if isOk {
 				items = append(items, &item)
 			}
+		default:
+			isOk := true
+			for _, copmarator := range cmp {
+				if !copmarator.compare(item.Value) {
+					isOk = false
+					break
+				}
+			}
+			if isOk {
+				items = append(items, &item)
+			}
 		}
 	}
 
@@ -174,10 +178,7 @@ func (n *node) getByValue(cmp []Comparator) []*pair {
 
 func (n *node) set(key KeyType, value ValueType, maxItem int) {
 	found, i := n.inodes.search(key)
-	// n.check()
-	// if len(n.children) > 0 {
-	// 	n.checkChildInodes(i)
-	// }
+
 	if found {
 		switch n.inodes[i].Value.(type) {
 		case []interface{}:
@@ -205,11 +206,11 @@ func (n *node) set(key KeyType, value ValueType, maxItem int) {
 		n.inodes.insertAt(i, newIndex)
 
 		n.children.insertAt(i+1, newChild)
-		if key.equalTo(newIndex.Key) {
+		if keyEqualTo(key, newIndex.Key) {
 			n.inodes[i].Value = value
 			return
 		}
-		if newIndex.Key.lessThan(key) {
+		if keyLessThan(newIndex.Key, key) {
 			i++
 		}
 	}

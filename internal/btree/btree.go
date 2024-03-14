@@ -1,5 +1,7 @@
 package btree
 
+import "slices"
+
 const (
 	DefaultBTreeDegree = 128
 	freelistSize       = 32
@@ -73,11 +75,23 @@ func (t *Tree) RemoveByKey(key KeyType) (bool, ValueType) {
 	return found, oldValue
 }
 
-func (t *Tree) RemoveByValue(cmp []Comparator) {
+func (t *Tree) RemoveByValue(cmp []Comparator) []KeyType {
+	deletedKeys := make([]KeyType, 0)
+
 	items := t.GetByValue(cmp)
-	for _, item := range items {
-		t.RemoveByKey(item.Key)
+	for _, item_to_del := range items {
+		item := t.GetByKey(item_to_del.Key)
+		switch item.Value.(type) {
+		case []interface{}:
+			item.Value = slices.DeleteFunc(item.Value.([]ValueType), func(data ValueType) bool {
+				return data == item_to_del.Value
+			})
+		default:
+			t.RemoveByKey(item.Key)
+		}
+		deletedKeys = append(deletedKeys, item.Key)
 	}
+	return deletedKeys
 }
 
 func (t *Tree) newNode() *node {

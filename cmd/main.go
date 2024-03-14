@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"subd/internal/db"
-	"time"
 )
 
 func main() {
@@ -17,8 +16,6 @@ func main() {
 			"job":  "TEXT",
 		},
 	)
-
-	start := time.Now()
 
 	database.Insert("users", map[string]interface{}{
 		"name": "vasya",
@@ -56,7 +53,7 @@ func main() {
 		"job":  "ded",
 	})
 
-	for i := 0; i < 200000; i++ {
+	for i := 0; i < 250000; i++ {
 		database.Insert("users", map[string]interface{}{
 			"name": "pasha",
 			"age":  18,
@@ -64,40 +61,26 @@ func main() {
 		})
 	}
 
-	elapsed := time.Since(start)
-	fmt.Printf("insert took %s \n", elapsed)
-
 	c1 := db.NewComparator("name", "vasya", "eq")
 	c2 := db.NewComparator("age", 18, "gt")
 
-	start = time.Now()
-
 	data := database.SelectWhere("users", []db.Comparator{c1, c2})
+
 	for _, d := range data {
 		fmt.Println(d)
 	}
 
-	elapsed = time.Since(start)
-	fmt.Printf("\nsearch took %s\n", elapsed)
+	database.CreateIndex("users", "age")
+	database.DeleteWhere("users", []db.Comparator{c1})
 
-	start = time.Now()
+	data = database.SelectWhere("users", []db.Comparator{c2})
 
-	c1 = db.NewComparator("name", "vasya", "eq")
-	c2 = db.NewComparator("job", "cook", "eq")
-	database.DeleteWhere("users", []db.Comparator{c1, c2})
-
-	elapsed = time.Since(start)
-	fmt.Printf("\ndelete took %s\n", elapsed)
-
-	start = time.Now()
-
-	c1 = db.NewComparator("name", "vasya", "eq")
-	c2 = db.NewComparator("age", 18, "gt")
-	data = database.SelectWhere("users", []db.Comparator{c1, c2})
 	for _, d := range data {
 		fmt.Println(d)
 	}
 
-	elapsed = time.Since(start)
-	fmt.Printf("\nsearch took %s\n", elapsed)
+	database.DropIndex("users", "age")
+
+	database.DropTable("users")
+
 }
