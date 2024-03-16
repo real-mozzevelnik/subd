@@ -2,25 +2,25 @@ package db
 
 import "sync"
 
-type DataStorage struct {
-	Collection map[string]*Row
+type dataStorage struct {
+	Collection map[string]*row
 	Mutex      sync.Mutex
 }
 
-func NewDataStorage() *DataStorage {
-	return &DataStorage{
-		Collection: make(map[string]*Row),
+func newDataStorage() *dataStorage {
+	return &dataStorage{
+		Collection: make(map[string]*row),
 	}
 }
 
-func (d *DataStorage) Add(key string, data map[string]interface{}) {
+func (d *dataStorage) Add(key string, data map[string]interface{}) {
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
-	d.Collection[key] = NewRow(data)
+	d.Collection[key] = newRow(data)
 }
 
-func (d *DataStorage) ReadAll() []*Row {
-	result := make([]*Row, 0)
+func (d *dataStorage) ReadAll() []*row {
+	result := make([]*row, 0)
 
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
@@ -32,8 +32,8 @@ func (d *DataStorage) ReadAll() []*Row {
 	return result
 }
 
-func (d *DataStorage) ReadAllWhere(where func(row *Row) bool) []*Row {
-	result := make([]*Row, 0)
+func (d *dataStorage) ReadAllWhere(where func(row *row) bool) []*row {
+	result := make([]*row, 0)
 
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
@@ -47,7 +47,7 @@ func (d *DataStorage) ReadAllWhere(where func(row *Row) bool) []*Row {
 	return result
 }
 
-func (d *DataStorage) ReadAllKeys() []string {
+func (d *dataStorage) ReadAllKeys() []string {
 	result := make([]string, 0)
 
 	d.Mutex.Lock()
@@ -60,7 +60,7 @@ func (d *DataStorage) ReadAllKeys() []string {
 	return result
 }
 
-func (d *DataStorage) Read(key string) *Row {
+func (d *dataStorage) Read(key string) *row {
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
 
@@ -72,7 +72,7 @@ func (d *DataStorage) Read(key string) *Row {
 	return res
 }
 
-func (d *DataStorage) DeleteAll() {
+func (d *dataStorage) DeleteAll() {
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
 
@@ -81,18 +81,22 @@ func (d *DataStorage) DeleteAll() {
 	}
 }
 
-func (d *DataStorage) DeleteAllWhere(where func(row *Row) bool) {
+func (d *dataStorage) DeleteAllWhere(where func(row *row) bool) (deletedKeys []string) {
+	deletedKeys = make([]string, 0)
+
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
 
 	for key, data := range d.Collection {
 		if where(data) {
 			delete(d.Collection, key)
+			deletedKeys = append(deletedKeys, key)
 		}
 	}
+	return deletedKeys
 }
 
-func (d *DataStorage) Delete(key string) {
+func (d *dataStorage) Delete(key string) {
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
 

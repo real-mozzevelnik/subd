@@ -21,7 +21,7 @@ func NewComparator(fieldName string, value interface{}, operation string) Compar
 	}
 }
 
-func (c Comparator) compare(row *Row) bool {
+func (c Comparator) compare(row *row) bool {
 	value := row.Data[c.FieldName]
 	switch c.Operation {
 	case "eq":

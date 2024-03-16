@@ -42,7 +42,7 @@ func (t *Tree) Put(key KeyType, value string) {
 		oldRoot := t.root
 		t.root = t.newNode()
 		index, second := oldRoot.split(t.maxItem / 2)
-		t.root.inodes = append(t.root.inodes, index)
+		t.root.inodes = append(t.root.inodes, &index)
 		t.root.children = append(t.root.children, oldRoot)
 		t.root.children = append(t.root.children, second)
 	}
@@ -60,6 +60,23 @@ func (t *Tree) RemoveByKey(key KeyType) (bool, ValueType) {
 		emptyroot.free()
 	}
 	return found, oldValue
+}
+
+func (t *Tree) RemoveWithValues(values []string) {
+	if t.root == nil {
+		return
+	}
+
+	values_map := make(map[string]interface{})
+	for _, val := range values {
+		values_map[val] = struct{}{}
+	}
+
+	emptyItemsKeys := t.root.removeWithValues(values_map)
+	for _, emptyItemKey := range emptyItemsKeys {
+		t.RemoveByKey(emptyItemKey)
+	}
+
 }
 
 func (t *Tree) newNode() *node {

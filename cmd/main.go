@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	testDb()
+	testBtree()
 }
 
 func testBtree() {
@@ -24,7 +24,11 @@ func testBtree() {
 	}
 
 	d := tree.GetByKey(5654)
+	fmt.Println(d)
 
+	tree.RemoveWithValues([]string{"5654"})
+
+	d = tree.GetByKey(5654)
 	fmt.Println(d)
 
 }
@@ -32,7 +36,7 @@ func testBtree() {
 func testDb() {
 	database := db.NewDB()
 
-	database.CreateTable(
+	database.Createtable(
 		"users",
 		map[string]interface{}{
 			"name": "TEXT",
@@ -90,7 +94,6 @@ func testDb() {
 	fmt.Println("insert took ", elapsed)
 
 	database.CreateIndex("users", "name")
-	database.DropIndex("users", "name")
 
 	c1 := db.NewComparator("name", "vasya", "eq")
 	c2 := db.NewComparator("age", 18, "gt")

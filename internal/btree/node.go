@@ -3,11 +3,12 @@ package btree
 import (
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 )
 
-type inode []pair
+type inode []*pair
 type children []*node
 
 type node struct {
@@ -22,7 +23,7 @@ func (n *node) free() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if len(f.list) < cap(f.list) {
-		n.inodes = []pair{}
+		n.inodes = []*pair{}
 		n.children = []*node{}
 		f.list = append(f.list, n)
 	}
@@ -39,24 +40,24 @@ func (in inode) search(key KeyType) (bool, int) {
 }
 
 func (in *inode) insertAt(i int, p pair) {
-	*in = append((*in), pair{})
+	*in = append((*in), &pair{})
 	copy((*in)[i+1:], (*in)[i:])
-	(*in)[i] = p
+	(*in)[i] = &p
 }
 
 func (in *inode) removeAt(i int) pair {
 	it := (*in)[i]
 	copy((*in)[i:], (*in)[i+1:])
-	(*in)[len(*in)-1] = pair{}
+	(*in)[len(*in)-1] = &pair{}
 	(*in) = (*in)[:len(*in)-1]
-	return it
+	return *it
 }
 
 func (in *inode) pop() pair {
 	it := (*in)[len(*in)-1]
-	(*in)[len(*in)-1] = pair{}
+	(*in)[len(*in)-1] = &pair{}
 	(*in) = (*in)[:len(*in)-1]
-	return it
+	return *it
 }
 
 func (c *children) insertAt(i int, child *node) {
@@ -83,7 +84,7 @@ func (c *children) pop() *node {
 func (n *node) getByKey(key KeyType) *pair {
 	found, i := n.inodes.search(key)
 	if found {
-		return &n.inodes[i]
+		return n.inodes[i]
 	}
 	if len(n.children) == 0 {
 		// leaf
@@ -150,7 +151,8 @@ func (n *node) remove(key KeyType, minItem int) (bool, ValueType) {
 	}
 	if found {
 		removed := n.inodes[i].Value
-		n.inodes[i] = n.children[i].removeMax(minItem)
+		tmpVal := n.children[i].removeMax(minItem)
+		n.inodes[i] = &tmpVal
 		return true, removed
 	}
 	return n.children[i].remove(key, minItem)
@@ -175,8 +177,9 @@ func (n *node) extendChild(i, minItem int) int {
 func (n *node) extendChildWithLeftSibling(i int) {
 	child := n.children[i]
 	leftSibling := n.children[i-1]
-	child.inodes.insertAt(0, n.inodes[i-1])
-	n.inodes[i-1] = leftSibling.inodes.pop()
+	child.inodes.insertAt(0, *n.inodes[i-1])
+	tmpVal := leftSibling.inodes.pop()
+	n.inodes[i-1] = &tmpVal
 	if len(child.children) > 0 {
 		child.children.insertAt(0, leftSibling.children.pop())
 	}
@@ -186,7 +189,8 @@ func (n *node) extendChildWithRightSibling(i int) {
 	child := n.children[i]
 	rightSibling := n.children[i+1]
 	child.inodes = append(child.inodes, n.inodes[i])
-	n.inodes[i] = rightSibling.inodes.removeAt(0)
+	tmpVal := rightSibling.inodes.removeAt(0)
+	n.inodes[i] = &tmpVal
 	if len(child.children) > 0 {
 		child.children = append(child.children, rightSibling.children.removeAt(0))
 	}
@@ -195,7 +199,8 @@ func (n *node) extendChildWithRightSibling(i int) {
 func (n *node) mergeChildWithRightSibling(i int) {
 	child := n.children[i]
 	rightSibling := n.children.removeAt(i + 1)
-	child.inodes = append(child.inodes, n.inodes.removeAt(i))
+	tmpVal := n.inodes.removeAt(i)
+	child.inodes = append(child.inodes, &tmpVal)
 	child.inodes = append(child.inodes, rightSibling.inodes...)
 	child.children = append(child.children, rightSibling.children...)
 	rightSibling.free()
@@ -218,5 +223,23 @@ func (n *node) split(i int) (pair, *node) {
 		new.children = append(new.children, n.children[i+1:]...)
 		n.children = n.children[:i+1]
 	}
-	return kv, new
+	return *kv, new
+}
+
+func (n *node) removeWithValues(values map[string]interface{}) (emptyItemsKeys []KeyType) {
+	emptyItemsKeys = make([]KeyType, 0)
+	for _, item := range n.inodes {
+		item.Value = slices.DeleteFunc(item.Value, func(val string) bool {
+			_, ok := values[val]
+			return ok
+		})
+		if len(item.Value) == 0 {
+			emptyItemsKeys = append(emptyItemsKeys, item.Key)
+		}
+	}
+
+	for _, child := range n.children {
+		emptyItemsKeys = append(emptyItemsKeys, child.removeWithValues(values)...)
+	}
+	return emptyItemsKeys
 }
