@@ -1,7 +1,5 @@
 package btree
 
-import "slices"
-
 const (
 	DefaultBTreeDegree = 128
 	freelistSize       = 32
@@ -33,18 +31,7 @@ func (t *Tree) GetByKey(key KeyType) *pair {
 	return t.root.getByKey(key)
 }
 
-func (t *Tree) GetByKeyWithOperation(key KeyType, operation string) []*pair {
-	if t.root == nil {
-		return nil
-	}
-	return t.root.getByKeyWithOperation(key, operation)
-}
-
-func (t *Tree) GetByValue(cmp []Comparator) []*pair {
-	return t.root.getByValue(cmp)
-}
-
-func (t *Tree) Put(key KeyType, value ValueType) {
+func (t *Tree) Put(key KeyType, value string) {
 	if t.root == nil {
 		t.root = t.newNode()
 		p := newPair(key, value)
@@ -73,25 +60,6 @@ func (t *Tree) RemoveByKey(key KeyType) (bool, ValueType) {
 		emptyroot.free()
 	}
 	return found, oldValue
-}
-
-func (t *Tree) RemoveByValue(cmp []Comparator) []KeyType {
-	deletedKeys := make([]KeyType, 0)
-
-	items := t.GetByValue(cmp)
-	for _, item_to_del := range items {
-		item := t.GetByKey(item_to_del.Key)
-		switch item.Value.(type) {
-		case []interface{}:
-			item.Value = slices.DeleteFunc(item.Value.([]ValueType), func(data ValueType) bool {
-				return data == item_to_del.Value
-			})
-		default:
-			t.RemoveByKey(item.Key)
-		}
-		deletedKeys = append(deletedKeys, item.Key)
-	}
-	return deletedKeys
 }
 
 func (t *Tree) newNode() *node {

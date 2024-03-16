@@ -31,11 +31,11 @@ func (db *DB) DropIndex(tableName, fieldName string) {
 	db.tables[tableName].dropIndex(fieldName)
 }
 
-func (db *DB) Select(tableName string) []*Result {
+func (db *DB) Select(tableName string) []*Row {
 	return db.tables[tableName].selectData()
 }
 
-func (db *DB) SelectWhere(tableName string, cmp []Comparator) []*Result {
+func (db *DB) SelectWhere(tableName string, cmp []Comparator) []*Row {
 	return db.tables[tableName].selectDataWhere(cmp)
 }
 

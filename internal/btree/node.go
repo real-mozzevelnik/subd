@@ -80,36 +80,6 @@ func (c *children) pop() *node {
 	return n
 }
 
-func (n *node) getByKeyWithOperation(key KeyType, operation string) []*pair {
-	items := make([]*pair, 0)
-
-	for _, item := range n.inodes {
-		cmp := Comparator{
-			Value:     key,
-			Operation: operation,
-		}
-		if cmp.compare(item.Key) {
-			switch item.Value.(type) {
-			case []interface{}:
-				for _, v := range item.Value.([]interface{}) {
-					i := newPair(item.Key, v)
-					items = append(items, &i)
-				}
-			default:
-				items = append(items, &item)
-			}
-		}
-	}
-
-	for _, child := range n.children {
-		if child != nil {
-			items = append(items, child.getByKeyWithOperation(key, operation)...)
-		}
-	}
-
-	return items
-}
-
 func (n *node) getByKey(key KeyType) *pair {
 	found, i := n.inodes.search(key)
 	if found {
@@ -122,78 +92,15 @@ func (n *node) getByKey(key KeyType) *pair {
 	return n.children[i].getByKey(key)
 }
 
-func (n *node) getByValue(cmp []Comparator) []*pair {
-	items := make([]*pair, 0)
-
-	for _, item := range n.inodes {
-		switch item.Value.(type) {
-		case []interface{}:
-			for _, it := range item.Value.([]interface{}) {
-				it := newPair(item.Key, it)
-
-				isOk := true
-				for _, copmarator := range cmp {
-					if !copmarator.compare(it.Value.(map[string]interface{})[copmarator.FieldName]) {
-						isOk = false
-						break
-					}
-				}
-				if isOk {
-					items = append(items, &it)
-				}
-			}
-		case map[string]interface{}:
-			isOk := true
-			for _, copmarator := range cmp {
-				if !copmarator.compare(item.Value.(map[string]interface{})[copmarator.FieldName]) {
-					isOk = false
-					break
-				}
-			}
-			if isOk {
-				items = append(items, &item)
-			}
-		default:
-			isOk := true
-			for _, copmarator := range cmp {
-				if !copmarator.compare(item.Value) {
-					isOk = false
-					break
-				}
-			}
-			if isOk {
-				items = append(items, &item)
-			}
-		}
-	}
-
-	for _, node := range n.children {
-		if node != nil {
-			items = append(items, node.getByValue(cmp)...)
-		}
-	}
-
-	return items
-}
-
-func (n *node) set(key KeyType, value ValueType, maxItem int) {
+func (n *node) set(key KeyType, value string, maxItem int) {
 	found, i := n.inodes.search(key)
 
 	if found {
-		switch n.inodes[i].Value.(type) {
-		case []interface{}:
-			n.inodes[i].Value = append(n.inodes[i].Value.([]interface{}), value)
-		case map[string]interface{}:
-			new_val := make([]interface{}, 0)
-			new_val = append(new_val, n.inodes[i].Value)
-			new_val = append(new_val, value)
-			n.inodes[i].Value = new_val
-		}
+		n.inodes[i].Value = append(n.inodes[i].Value, value)
 		return
 	}
 
 	if len(n.children) == 0 {
-
 		n.inodes.insertAt(i, newPair(key, value))
 		return
 	}
@@ -207,7 +114,7 @@ func (n *node) set(key KeyType, value ValueType, maxItem int) {
 
 		n.children.insertAt(i+1, newChild)
 		if keyEqualTo(key, newIndex.Key) {
-			n.inodes[i].Value = value
+			n.inodes[i].Value = append(n.inodes[i].Value, value)
 			return
 		}
 		if keyLessThan(newIndex.Key, key) {
