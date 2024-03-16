@@ -1,11 +1,39 @@
 package main
 
 import (
-	"fmt"
 	"subd/internal/db"
+	"subd/internal/parser/parser"
 )
 
 func main() {
+	database := createDB()
+	parser := parser.New("")
+
+	request := `INSERT INTO users (name, age, job) 
+	VALUES
+	(
+		'Vadim', 
+		46, 
+		'pidr'
+	),
+	(
+		'Sanya',
+		19,
+		'pidr'
+	);
+
+	SELECT name FROM users WHERE job == pidr;`
+
+	parser.Accept(request)
+	parser.Prepare()
+	parser.Execute()
+
+	// data := database.SelectWhere("users", []db.Comparator{c1, c2})
+
+	dropDB(database)
+}
+
+func createDB() *db.DB {
 	database := db.NewDB()
 
 	database.CreateTable(
@@ -35,52 +63,35 @@ func main() {
 		"job":  "ded",
 	})
 
-	database.Insert("users", map[string]interface{}{
-		"name": "vasya",
-		"age":  32,
-		"job":  "cook",
-	})
+	return database
+}
 
-	database.Insert("users", map[string]interface{}{
-		"name": "ilya",
-		"age":  14,
-		"job":  "child",
-	})
-
-	database.Insert("users", map[string]interface{}{
-		"name": "vasya",
-		"age":  14,
-		"job":  "ded",
-	})
-
-	for i := 0; i < 250000; i++ {
-		database.Insert("users", map[string]interface{}{
-			"name": "pasha",
-			"age":  18,
-			"job":  "student",
-		})
-	}
-
-	c1 := db.NewComparator("name", "vasya", "eq")
-	c2 := db.NewComparator("age", 18, "gt")
-
-	data := database.SelectWhere("users", []db.Comparator{c1, c2})
-
-	for _, d := range data {
-		fmt.Println(d)
-	}
-
-	database.CreateIndex("users", "age")
-	database.DeleteWhere("users", []db.Comparator{c1})
-
-	data = database.SelectWhere("users", []db.Comparator{c2})
-
-	for _, d := range data {
-		fmt.Println(d)
-	}
-
-	database.DropIndex("users", "age")
+func dropDB(database *db.DB) {
+	//database.DropIndex("users", "age")
 
 	database.DropTable("users")
-
 }
+
+// for i := 0; i < 250000; i++ {
+// 	database.Insert("users", map[string]interface{}{
+// 		"name": "pasha",
+// 		"age":  18,
+// 		"job":  "student",
+// 	})
+// }
+
+// c1 := db.NewComparator("name", "vasya", "eq")
+// c2 := db.NewComparator("age", 18, "gt")
+
+// for _, d := range data {
+// 	fmt.Println(d)
+// }
+
+// database.CreateIndex("users", "age")
+// database.DeleteWhere("users", []db.Comparator{c1})
+
+// data = database.SelectWhere("users", []db.Comparator{c2})
+
+// for _, d := range data {
+// 	fmt.Println(d)
+// }

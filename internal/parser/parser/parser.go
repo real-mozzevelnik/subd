@@ -8,47 +8,57 @@ import (
 )
 
 type Parser struct {
-	originRequest string
-	stmtQueue     []statement.Statement
+	originRequest  string
+	statementQueue []statement.Statement
 }
 
-func New(originRequest string) *Parser {
+func New(request string) *Parser {
 	return &Parser{
-		originRequest: originRequest,
-		stmtQueue:     make([]statement.Statement, 0),
+		originRequest:  request,
+		statementQueue: make([]statement.Statement, 0),
 	}
 }
 
-func (p *Parser) Accept(query string) error {
-	query = strings.NewReplacer("\t", "", "\n", "", "  ", "", "   ", "", "    ", "").Replace(query)
-
-	p.originRequest = query
-
-	return nil
+func (p *Parser) Accept(request string) {
+	p.originRequest = request
 }
 
+// forming a queue of statements
 func (p *Parser) Prepare() error {
+	//REFACTOR: Is it right way to clear a ' sign from oroginal request and check of type correctness
+	//			in INSERT Execute() method?
+	query := strings.NewReplacer("\t", "", "\n", "", "'", "").Replace(p.originRequest)
 
-	subRequests := strings.Split(p.originRequest, ";")
+	//split request by ';'
+	subRequests := strings.Split(query, ";")
 
-	for i := 0; i < len(subRequests); i++ {
-		stmt := statement.New(subRequests[i])
-		p.stmtQueue = append(p.stmtQueue, *stmt)
+	//parse compound request on separate
+	for i := 0; i < len(subRequests)-1; i++ {
+		statement := statement.New(subRequests[i])
+		//parse statement and prepare it for execute method
+		statement.Prepare()
 	}
 
-	for i := 0; i < len(p.stmtQueue)-1; i++ {
-		fmt.Printf("%d : %s\n", i, p.stmtQueue[i].OriginText())
+	// show origin requests
+	for i := 0; i < len(p.statementQueue); i++ {
+		fmt.Printf("\n%d : %s", i, p.statementQueue[i].OriginText())
 	}
 
 	return nil
 }
 
+/*
+TODO: сделать функцию, которая за 1 вызов доастет из очереди запрос,
+выполняет его, возвращает db.Result или nil по окончании запросов.
+Если SQL запрос не подразумевает получение множество с выборкой
+данных, то возвращается пустое множество.
+*/
 func (p *Parser) Execute() (map[string]string, error) {
-	/*
-		(1) Call SQL statements handlers
-		(2) Generate a result set OR
-		    manipulate with data
-	*/
+
+	for _, stmt := range p.statementQueue {
+		stmt.Execute()
+	}
+
 	return nil, nil
 }
 

@@ -4,6 +4,12 @@ type Select struct {
 	Expr string
 }
 
+func New(request string) *Select {
+	return &Select{
+		Expr: request,
+	}
+}
+
 func (s *Select) Execute() error {
 
 	return nil
