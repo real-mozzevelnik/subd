@@ -57,9 +57,9 @@ func (p *Parser) Execute() (map[string]string, error) {
 	return nil, nil
 }
 
-func StatementHandler(parser *Parser) func() *db.Result {
+func StatementHandler(parser *Parser) func() *db.Row {
 	idx := 0
-	return func() *db.Result {
+	return func() *db.Row {
 		if idx < len(parser.statementQueue) {
 			return nil
 			//return  (*parser.statementQueue[idx]).Execute()

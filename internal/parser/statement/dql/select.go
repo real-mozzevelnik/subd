@@ -71,7 +71,7 @@ var selectId = 0
 
 // TODO: Return db.Result
 func (s *Select) Execute() {
-	var data []*db.Result
+	var data []*db.Row
 
 	if len(s.comparators) == 0 {
 		data = s.DataBase.Select(s.tableName)
