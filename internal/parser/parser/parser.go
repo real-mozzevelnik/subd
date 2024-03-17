@@ -29,7 +29,7 @@ func (p *Parser) Accept(request string) {
 func (p *Parser) Prepare() error {
 	//REFACTOR: Is it right way to clear a ' sign from oroginal request and check of type
 	//			in INSERT Execute() method?
-	query := strings.NewReplacer("\t", "", "\n", "", "'", "").Replace(p.originRequest)
+	query := strings.NewReplacer("\t", "", "\n", "", ", ", ",").Replace(p.originRequest)
 
 	//split request by ';'
 	subRequests := strings.Split(query, ";")
@@ -40,11 +40,6 @@ func (p *Parser) Prepare() error {
 		//parse statement and prepare it for execute method
 		(*statement).Prepare()
 		p.statementQueue = append(p.statementQueue, statement)
-	}
-
-	// show origin requests
-	for i := 0; i < len(p.statementQueue); i++ {
-		// fmt.Printf("\n%d : %s", i, p.statementQueue[i].OriginText())
 	}
 
 	return nil
