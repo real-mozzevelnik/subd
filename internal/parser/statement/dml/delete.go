@@ -1,6 +1,7 @@
 package dml
 
 import (
+	"fmt"
 	"strings"
 	"subd/internal/db"
 	"subd/internal/parser/statement/dql"
@@ -47,11 +48,24 @@ func (d *Delete) Prepare() {
 	}
 }
 
-func (d *Delete) Execute() {
+func (d *Delete) Execute() []*db.Row {
 	if len(d.comparators) == 0 {
 		d.DataBase.Delete(d.tableName)
 
 	} else {
 		d.DataBase.DeleteWhere(d.tableName, d.comparators)
 	}
+
+	// REFACTOR: refactor return value
+
+	// LOGS BLOCK
+	{
+		if len(d.comparators) == 0 {
+			fmt.Printf("\ndelete %s table\n", d.tableName)
+		} else {
+			fmt.Printf("\ndelete %s = %s from %s\n", d.comparators[0].FieldName, d.comparators[0].Value, d.tableName)
+		}
+	}
+
+	return nil
 }

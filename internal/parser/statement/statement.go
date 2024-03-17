@@ -10,7 +10,7 @@ import (
 
 type Statement interface {
 	Prepare()
-	Execute()
+	Execute() []*db.Row
 }
 
 func New(request string, database *db.DB) *Statement {

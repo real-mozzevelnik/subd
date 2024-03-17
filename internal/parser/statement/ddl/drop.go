@@ -11,6 +11,6 @@ func (d *Drop) Prepare() {
 
 }
 
-func (d *Drop) Execute() {
-
+func (d *Drop) Execute() []*db.Row {
+	return nil
 }

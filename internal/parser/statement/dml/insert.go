@@ -15,7 +15,8 @@ type Insert struct {
 }
 
 func (i *Insert) Prepare() {
-	re := regexp.MustCompile(`INSERT INTO (.*) \((.*)\) VALUES\((.*)\)`)
+	// BUGS: "INTO users()" calls panic, although "INTO users ()" will work correctly
+	re := regexp.MustCompile(`INSERT INTO (.*) \((.*)\) VALUES\s*[\s\(](.*)\)`)
 	match := re.FindStringSubmatch(i.Request)
 
 	i.tableName = match[1]
@@ -31,9 +32,14 @@ func (i *Insert) Prepare() {
 		i.data[column] = values[idx]
 	}
 
-	fmt.Printf("%v\n%v\n\n", i.Request, i.data)
 }
 
-func (i *Insert) Execute() {
+func (i *Insert) Execute() []*db.Row {
 	i.DataBase.Insert(i.tableName, i.data)
+
+	// LOGS BLOCK
+	{
+		fmt.Printf("\n\n%v\n%v\n", i.Request, i.data)
+	}
+	return nil
 }

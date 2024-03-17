@@ -23,12 +23,23 @@ func New(request string, dataBase *db.DB) *Parser {
 
 func (p *Parser) Accept(request string) {
 	p.originRequest = request
+	p.prepare()
 }
 
 // forming a queue of statements
-func (p *Parser) Prepare() error {
+func (p *Parser) prepare() error {
+	//clear queue
+	p.statementQueue = p.statementQueue[:0]
+	//clear request from trash signs
 	query := strings.NewReplacer("\t", "", "\n", "", ", ", ",").Replace(p.originRequest)
 
+	//adding ';' sign at the end of the request
+	r := []rune(query)
+	if r[len(r)-1] != ';' {
+		query = query + string(";")
+	}
+
+	//split request by ';' sign
 	subRequests := strings.Split(query, ";")
 
 	//parse compound request on separate
@@ -42,28 +53,17 @@ func (p *Parser) Prepare() error {
 	return nil
 }
 
-/*
-TODO: сделать функцию, которая за 1 вызов доастет из очереди запрос,
-выполняет его, возвращает db.Result или nil по окончании запросов.
-Если SQL запрос не подразумевает получение множество с выборкой
-данных, то возвращается пустое множество.
-*/
+// return pullRequest function, whick pull a one request from the queue and executes it
+func StatementHandler(parser *Parser) (pullLength int, pullRequest func() []*db.Row) {
+	index := -1
+	queueLength := len(parser.statementQueue)
 
-func (p *Parser) Execute() (map[string]string, error) {
-	for _, statement := range p.statementQueue {
-		(*statement).Execute()
-	}
-
-	return nil, nil
-}
-
-func StatementHandler(parser *Parser) func() *db.Row {
-	idx := 0
-	return func() *db.Row {
-		if idx < len(parser.statementQueue) {
-			return nil
-			//return  (*parser.statementQueue[idx]).Execute()
+	return queueLength, func() []*db.Row {
+		if index < queueLength {
+			index++
+			return (*parser.statementQueue[index]).Execute()
+		} else {
+			panic("Pull request is empty")
 		}
-		return nil
 	}
 }

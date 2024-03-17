@@ -39,6 +39,7 @@ func (s *Select) Prepare() {
 			s.tableName = words[index]
 			continue
 		}
+
 		// TODO: Correct type conversion666, adding keyword OR
 		// REFACTOR: idk, just doesnt like how it looks
 		if words[index] == "WHERE" {
@@ -70,7 +71,7 @@ func (s *Select) Prepare() {
 var selectId = 0
 
 // TODO: Return db.Result
-func (s *Select) Execute() {
+func (s *Select) Execute() []*db.Row {
 	var data []*db.Row
 
 	if len(s.comparators) == 0 {
@@ -79,10 +80,15 @@ func (s *Select) Execute() {
 		data = s.DataBase.SelectWhere(s.tableName, s.comparators)
 	}
 
-	fmt.Printf("SELECT NUMBER: %d\n", selectId)
-	selectId++
-	for _, d := range data {
-		fmt.Printf("%v\n", d)
+	// LOGS BLOCK
+	{
+		fmt.Printf("\n\nSELECT NUMBER: %d\n", selectId)
+		selectId++
+		for _, d := range data {
+			fmt.Printf("%v\n", d)
+		}
+		fmt.Println()
 	}
-	fmt.Println()
+
+	return data
 }

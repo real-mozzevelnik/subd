@@ -11,6 +11,7 @@ func (i *Update) Prepare() {
 
 }
 
-func (i *Update) Execute() {
+func (i *Update) Execute() []*db.Row {
 
+	return nil
 }

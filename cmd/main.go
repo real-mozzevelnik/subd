@@ -1,61 +1,110 @@
 package main
 
 import (
+	"fmt"
 	"subd/internal/db"
 	"subd/internal/parser/parser"
+	"time"
 )
 
 func main() {
 	database := createDB()
-	parser := parser.New("", database)
+	requestParser := parser.New("", database)
 
-	request := `
-	INSERT INTO users (name, age, job) 
-	VALUES("Vadim", 
-		46, 
-		"pidr"
-	);
- 
-	INSERT INTO users (name, age, job) 
-	VALUES
-	(
-		"Sanya',
-		19,
-		'pidr'
-	);
+	requestsTest(requestParser)
 
-	SELECT name FROM users;
-
-	SELECT name FROM users WHERE job == clown AND name != andrey;
-	
-	DELETE FROM users WHERE job == clown AND name == andrey;
-
-	SELECT name FROM users;
-	`
-	// database.Delete("users")
-
-	parser.Accept(request)
-
-	parser.Prepare()
-
-	// REFACTOR: rework parser interface, for example:
 	/*
-		(data typeof *db.Result)
-
-		pullRequest := statement.StatementHandler(parser)
-		data = pullRequest()
-		fmt.Println(data)
-
-		while(data != nil) {
-			data = pullRequst()
-		}
+		before tests it is necessary to comment the logs block in Insert/Select Execute() method
 	*/
-
-	parser.Execute()
-
-	// data := database.SelectWhere("users", []db.Comparator{c1, c2})
+	//timingTest(requestParser)
 
 	dropDB(database)
+}
+
+func requestsTest(requestParser *parser.Parser) {
+	request := `
+		INSERT INTO users (name, age, job) VALUES (Sanya, 19, dev);
+		
+		INSERT INTO users (name, age, job) 
+		VALUES(Vadim, 
+			46, 
+			dev
+		);
+		
+		INSERT INTO users (name, age, job) VALUES      (Bob, 89, dev);
+
+		SELECT name FROM users;
+
+		SELECT name FROM users WHERE job == clown AND name != andrey;
+
+		DELETE FROM users WHERE job == clown AND name == andrey;
+
+		SELECT name FROM users
+	`
+
+	requestParser.Accept(request)
+
+	pullLen, pullRequest := parser.StatementHandler(requestParser)
+
+	fmt.Printf("pullLen = %d\n", pullLen)
+
+	for i := 0; i < pullLen; i++ {
+		pullRequest()
+	}
+}
+
+func timingTest(requestParser *parser.Parser) {
+	insRequest := "INSERT INTO users (name, age, job) VALUES (Sanya, 10, dev);"
+	insCount := 200000
+
+	start := time.Now()
+	for i := 0; i < insCount; i++ {
+		requestParser.Accept(insRequest)
+
+		pullLen, pullRequest := parser.StatementHandler(requestParser)
+		for i := 0; i < pullLen; i++ {
+			pullRequest()
+		}
+	}
+
+	elapsed := time.Since(start)
+	fmt.Printf("\n\n%d Insert time execution (sec): %f. \n Insert per second: %f", insCount, elapsed.Seconds(), float64(insCount)/elapsed.Seconds())
+
+	// SELECT
+
+	selRequest := "SELECT name FROM users"
+	selCount := 100
+
+	start = time.Now()
+	for i := 0; i < selCount; i++ {
+		requestParser.Accept(selRequest)
+
+		pullLen, pullRequest := parser.StatementHandler(requestParser)
+		for i := 0; i < pullLen; i++ {
+			pullRequest()
+		}
+	}
+
+	elapsed = time.Since(start)
+	fmt.Printf("\n\n%d Select time execution (sec): %f. \n Select per second: %f", selCount, elapsed.Seconds(), float64(selCount)/elapsed.Seconds())
+
+	// SELECT WHERE
+
+	selWhereRequest := "SELECT name FROM users WHERE job == clown AND name == vadim"
+	selWhereCount := 100
+
+	start = time.Now()
+	for i := 0; i < selCount; i++ {
+		requestParser.Accept(selWhereRequest)
+
+		pullLen, pullRequest := parser.StatementHandler(requestParser)
+		for i := 0; i < pullLen; i++ {
+			pullRequest()
+		}
+	}
+
+	elapsed = time.Since(start)
+	fmt.Printf("\n\n%d SelectWhere time execution (sec): %f. \n SelectWhere per second: %f", selWhereCount, elapsed.Seconds(), float64(selWhereCount)/elapsed.Seconds())
 }
 
 func createDB() *db.DB {
@@ -92,31 +141,5 @@ func createDB() *db.DB {
 }
 
 func dropDB(database *db.DB) {
-	//database.DropIndex("users", "age")
-
 	database.DropTable("users")
 }
-
-// for i := 0; i < 250000; i++ {
-// 	database.Insert("users", map[string]interface{}{
-// 		"name": "pasha",
-// 		"age":  18,
-// 		"job":  "student",
-// 	})
-// }
-
-// c1 := db.NewComparator("name", "vasya", "eq")
-// c2 := db.NewComparator("age", 18, "gt")
-
-// for _, d := range data {
-// 	fmt.Println(d)
-// }
-
-// database.CreateIndex("users", "age")
-// database.DeleteWhere("users", []db.Comparator{c1})
-
-// data = database.SelectWhere("users", []db.Comparator{c2})
-
-// for _, d := range data {
-// 	fmt.Println(d)
-// }
