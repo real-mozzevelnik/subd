@@ -1,11 +1,11 @@
 package db
 
-type row struct {
+type Row struct {
 	Data map[string]interface{}
 }
 
-func newRow(data map[string]interface{}) *row {
-	return &row{
+func newRow(data map[string]interface{}) *Row {
+	return &Row{
 		Data: data,
 	}
 }

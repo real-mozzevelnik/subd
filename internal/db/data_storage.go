@@ -3,13 +3,13 @@ package db
 import "sync"
 
 type dataStorage struct {
-	Collection map[string]*row
+	Collection map[string]*Row
 	Mutex      sync.Mutex
 }
 
 func newDataStorage() *dataStorage {
 	return &dataStorage{
-		Collection: make(map[string]*row),
+		Collection: make(map[string]*Row),
 	}
 }
 
@@ -19,8 +19,8 @@ func (d *dataStorage) Add(key string, data map[string]interface{}) {
 	d.Collection[key] = newRow(data)
 }
 
-func (d *dataStorage) ReadAll() []*row {
-	result := make([]*row, 0)
+func (d *dataStorage) ReadAll() []*Row {
+	result := make([]*Row, 0)
 
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
@@ -32,8 +32,8 @@ func (d *dataStorage) ReadAll() []*row {
 	return result
 }
 
-func (d *dataStorage) ReadAllWhere(where func(row *row) bool) []*row {
-	result := make([]*row, 0)
+func (d *dataStorage) ReadAllWhere(where func(row *Row) bool) []*Row {
+	result := make([]*Row, 0)
 
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
@@ -60,7 +60,7 @@ func (d *dataStorage) ReadAllKeys() []string {
 	return result
 }
 
-func (d *dataStorage) Read(key string) *row {
+func (d *dataStorage) Read(key string) *Row {
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
 
@@ -81,7 +81,7 @@ func (d *dataStorage) DeleteAll() {
 	}
 }
 
-func (d *dataStorage) DeleteAllWhere(where func(row *row) bool) (deletedKeys []string) {
+func (d *dataStorage) DeleteAllWhere(where func(row *Row) bool) (deletedKeys []string) {
 	deletedKeys = make([]string, 0)
 
 	d.Mutex.Lock()

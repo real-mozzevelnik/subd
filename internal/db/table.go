@@ -45,13 +45,13 @@ func (t *table) dropIndex(fieldName string) {
 	runtime.GC()
 }
 
-func (t *table) selectData() []*row {
+func (t *table) selectData() []*Row {
 	return t.dataStorage.ReadAll()
 }
 
-func (t *table) selectDataWhere(cmp []Comparator) []*row {
+func (t *table) selectDataWhere(cmp []Comparator) []*Row {
 	return t.dataStorage.ReadAllWhere(
-		func(row *row) bool {
+		func(row *Row) bool {
 			isOk := true
 			for _, comparator := range cmp {
 				if !comparator.compare(row) {
@@ -108,7 +108,7 @@ func (t *table) deleteData() {
 
 func (t *table) deleteDataWhere(cmp []Comparator) {
 	deletedKeys := t.dataStorage.DeleteAllWhere(
-		func(row *row) bool {
+		func(row *Row) bool {
 			isOk := true
 			for _, comparator := range cmp {
 				if !comparator.compare(row) {
