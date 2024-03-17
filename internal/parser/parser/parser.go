@@ -27,11 +27,8 @@ func (p *Parser) Accept(request string) {
 
 // forming a queue of statements
 func (p *Parser) Prepare() error {
-	//REFACTOR: Is it right way to clear a ' sign from oroginal request and check of type
-	//			in INSERT Execute() method?
 	query := strings.NewReplacer("\t", "", "\n", "", ", ", ",").Replace(p.originRequest)
 
-	//split request by ';'
 	subRequests := strings.Split(query, ";")
 
 	//parse compound request on separate
@@ -61,32 +58,12 @@ func (p *Parser) Execute() (map[string]string, error) {
 }
 
 func StatementHandler(parser *Parser) func() *db.Result {
+	idx := 0
 	return func() *db.Result {
+		if idx < len(parser.statementQueue) {
+			return nil
+			//return  (*parser.statementQueue[idx]).Execute()
+		}
 		return nil
 	}
 }
-
-func (p *Parser) OriginText() string {
-	return p.originRequest
-}
-
-// Truncate Truncate
-// Drop     Drop
-// Create   Create
-// Rename   Rename
-// Alter    Alter
-
-// Select Select
-// Insert Insert
-// Delete Delete
-// Merge  Merge
-// Update Update
-
-// Grant  Grant
-// Revoke Revoke
-// Deny   Deny
-
-// BeginTC    BeginTC
-// CommitTC   CommitTC
-// RollbackTC RollbackTC
-// SaveTc     SaveTC

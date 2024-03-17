@@ -47,31 +47,3 @@ func New(request string, database *db.DB) *Statement {
 
 	return &statement
 }
-
-// func (s *Statement) Prepare() {
-// fmt.Printf("\nrequest: %s", s.requestText)
-
-// keyWord := strings.Fields(s.requestText)[0]
-
-// switch keyWord {
-// case "SELECT":
-
-// 	break
-
-// case "INSERT":
-// 	break
-
-// case "DELETE":
-// 	break
-// }
-// }
-
-// func (s *Statement) Execute() {
-// 	for _, elem := range s.stmtExprQueue {
-// 		elem.Execute()
-// 	}
-// }
-
-// func (s *Statement) OriginText() string {
-// 	return s.requestText
-// }

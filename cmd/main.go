@@ -11,14 +11,17 @@ func main() {
 
 	request := `
 	INSERT INTO users (name, age, job) 
-	VALUES("Vadim",46,"pidr");
+	VALUES("Vadim", 
+		46, 
+		"pidr"
+	);
 
 	INSERT INTO users (name, age, job) 
 	VALUES
 	(
-		"Sanya",
+		"Sanya',
 		19,
-		"pidr"
+		'pidr'
 	);
 
 	SELECT name FROM users;
