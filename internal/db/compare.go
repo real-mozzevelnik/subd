@@ -1,10 +1,5 @@
 package db
 
-import (
-	"fmt"
-	"subd/internal/btree"
-)
-
 // operations:
 // "eq" ==
 // "neq" !=
@@ -18,30 +13,74 @@ type Comparator struct {
 	Operation string
 }
 
-func (c Comparator) toBTreeComparator() btree.Comparator {
-	return btree.Comparator{
-		FieldName: c.FieldName,
-		Operation: c.Operation,
-		Value:     c.Value,
-	}
-}
-
 func NewComparator(fieldName string, value interface{}, operation string) Comparator {
-	availableOperations := []string{"eq", "neq", "le", "lt", "ge", "gt"}
-	inOperations := false
-	for _, op := range availableOperations {
-		if operation == op {
-			inOperations = true
-		}
-	}
-	if !inOperations {
-		fmt.Println("available operations: eq, neq, le, lt, ge, gt")
-		return Comparator{}
-	}
-
 	return Comparator{
 		FieldName: fieldName,
 		Value:     value,
 		Operation: operation,
 	}
+}
+
+func (c Comparator) compare(row *Row) bool {
+	value := row.Data[c.FieldName]
+	switch c.Operation {
+	case "eq":
+		if value == c.Value {
+			return true
+		}
+
+	case "neq":
+		if value != c.Value {
+			return true
+		}
+
+	case "lt":
+		switch value.(type) {
+		case int:
+			if value.(int) < c.Value.(int) {
+				return true
+			}
+		case float64:
+			if value.(float64) < c.Value.(float64) {
+				return true
+			}
+		}
+
+	case "le":
+		switch value.(type) {
+		case int:
+			if value.(int) <= c.Value.(int) {
+				return true
+			}
+		case float64:
+			if value.(float64) <= c.Value.(float64) {
+				return true
+			}
+		}
+
+	case "gt":
+		switch value.(type) {
+		case int:
+			if value.(int) > c.Value.(int) {
+				return true
+			}
+		case float64:
+			if value.(float64) > c.Value.(float64) {
+				return true
+			}
+		}
+
+	case "ge":
+		switch value.(type) {
+		case int:
+			if value.(int) >= c.Value.(int) {
+				return true
+			}
+		case float64:
+			if value.(float64) >= c.Value.(float64) {
+				return true
+			}
+		}
+	}
+	return false
 }

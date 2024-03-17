@@ -15,7 +15,7 @@ func main() {
 		46, 
 		"pidr"
 	);
-
+ 
 	INSERT INTO users (name, age, job) 
 	VALUES
 	(
@@ -61,7 +61,7 @@ func main() {
 func createDB() *db.DB {
 	database := db.NewDB()
 
-	database.CreateTable(
+	database.Createtable(
 		"users",
 		map[string]interface{}{
 			"name": "TEXT",

@@ -1,16 +1,16 @@
 package db
 
 type DB struct {
-	tables map[string]*Table
+	tables map[string]*table
 }
 
 func NewDB() *DB {
 	return &DB{
-		tables: make(map[string]*Table),
+		tables: make(map[string]*table),
 	}
 }
 
-func (db *DB) CreateTable(name string, schema map[string]interface{}) {
+func (db *DB) Createtable(name string, schema map[string]interface{}) {
 	db.tables[name] = newTable(name, schema)
 }
 
@@ -31,11 +31,11 @@ func (db *DB) DropIndex(tableName, fieldName string) {
 	db.tables[tableName].dropIndex(fieldName)
 }
 
-func (db *DB) Select(tableName string) []*Result {
+func (db *DB) Select(tableName string) []*Row {
 	return db.tables[tableName].selectData()
 }
 
-func (db *DB) SelectWhere(tableName string, cmp []Comparator) []*Result {
+func (db *DB) SelectWhere(tableName string, cmp []Comparator) []*Row {
 	return db.tables[tableName].selectDataWhere(cmp)
 }
 

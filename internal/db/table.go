@@ -1,115 +1,136 @@
 package db
 
 import (
-	"subd/internal/btree"
+	"runtime"
+	"sync"
 
 	"github.com/google/uuid"
 )
 
-type Table struct {
-	schema  map[string]interface{}
-	indexes map[string]*Index
-	tree    *btree.Tree
-	name    string
+type table struct {
+	schema      map[string]interface{}
+	indexes     map[string]*index
+	dataStorage *dataStorage
+	name        string
 }
 
-func newTable(name string, schema map[string]interface{}) *Table {
-	return &Table{
-		name:    name,
-		schema:  schema,
-		tree:    btree.New(btree.DefaultBTreeDegree),
-		indexes: make(map[string]*Index),
+func newTable(name string, schema map[string]interface{}) *table {
+	return &table{
+		name:        name,
+		schema:      schema,
+		indexes:     make(map[string]*index),
+		dataStorage: newDataStorage(),
 	}
 }
 
-func (t *Table) drop() {
-	for fieldName, _ := range t.indexes {
-		t.dropIndex(fieldName)
+func (t *table) drop() {
+	for name, _ := range t.indexes {
+		t.dropIndex(name)
 	}
-	t.deleteData()
+	t.dataStorage.DeleteAll()
 }
 
-func (t *Table) newIndex(fieldName string) {
+func (t *table) newIndex(fieldName string) {
 	t.indexes[fieldName] = newIndex(fieldName)
-	tableData := t.selectData()
-	for _, row := range tableData {
-		t.indexes[fieldName].tree.Put(row.Value.(map[string]interface{})[fieldName], row.Key)
+	keys := t.dataStorage.ReadAllKeys()
+	for _, key := range keys {
+		dataKey := t.dataStorage.Read(key).Data[fieldName]
+		t.indexes[fieldName].tree.Put(dataKey, key)
 	}
 }
 
-func (t *Table) dropIndex(fieldName string) {
-	t.indexes[fieldName].tree.RemoveByValue([]btree.Comparator{})
+func (t *table) dropIndex(fieldName string) {
+	t.indexes[fieldName].tree = nil
 	delete(t.indexes, fieldName)
+	runtime.GC()
 }
 
-func (t *Table) selectData() []*Result {
-	rows := make([]*Result, 0)
-	items := t.tree.GetByValue([]btree.Comparator{})
-	for _, item := range items {
-		result := newResult(item.Key, item.Value)
-		rows = append(rows, result)
-	}
-	return rows
+func (t *table) selectData() []*Row {
+	return t.dataStorage.ReadAll()
 }
 
-func (t *Table) selectDataWhere(cmp []Comparator) []*Result {
-	comparators := make([]btree.Comparator, 0)
-	for _, c := range cmp {
-		comparators = append(comparators, c.toBTreeComparator())
-	}
-
-	rows := make([]*Result, 0)
-	items := t.tree.GetByValue(comparators)
-	for _, item := range items {
-		result := newResult(item.Key, item.Value)
-		rows = append(rows, result)
-	}
-	return rows
+func (t *table) selectDataWhere(cmp []Comparator) []*Row {
+	return t.dataStorage.ReadAllWhere(
+		func(row *Row) bool {
+			isOk := true
+			for _, comparator := range cmp {
+				if !comparator.compare(row) {
+					isOk = false
+					break
+				}
+			}
+			return isOk
+		},
+	)
 }
 
-func (t *Table) insertData(data map[string]interface{}) {
-	rowId := uuid.NewString()
-	t.tree.Put(btree.KeyType(rowId), data)
+func (t *table) insertData(data map[string]interface{}) {
+	rowKey := uuid.NewString()
+	var wg sync.WaitGroup
 
-	for fieldName, index := range t.indexes {
-		index.tree.Put(data[fieldName], rowId)
-	}
-}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		t.dataStorage.Add(rowKey, data)
+	}()
 
-func (t *Table) deleteData() {
-	t.tree.RemoveByValue([]btree.Comparator{})
-}
-
-func (t *Table) deleteDataWhere(cmp []Comparator) []*Result {
-	result := make([]*Result, 0)
-	deletedKeysMap := make(map[btree.KeyType]interface{})
-
-	comparators := make([]btree.Comparator, 0)
-	for _, c := range cmp {
-		comparators = append(comparators, c.toBTreeComparator())
-	}
-	deletedKeys := t.tree.RemoveByValue(comparators)
-
-	for _, key := range deletedKeys {
-		result = append(result, newResult(key, nil))
-		deletedKeysMap[key] = nil
+	for _, idx := range t.indexes {
+		wg.Add(1)
+		go func(idx *index) {
+			defer wg.Done()
+			idx.tree.Put(data[idx.name], rowKey)
+		}(idx)
 	}
 
-	for _, index := range t.indexes {
-		c := btree.Comparator{
-			Operation: "in",
-			Value:     deletedKeysMap,
-		}
-		index.tree.RemoveByValue([]btree.Comparator{c})
+	wg.Wait()
+}
+
+func (t *table) deleteData() {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		t.dataStorage.DeleteAll()
+	}()
+
+	for fieldName, _ := range t.indexes {
+		wg.Add(1)
+		go func(fieldName string) {
+			defer wg.Done()
+			t.dropIndex(fieldName)
+			t.newIndex(fieldName)
+		}(fieldName)
 	}
 
-	return result
+	wg.Wait()
 }
 
-func (t *Table) updateData() {
+func (t *table) deleteDataWhere(cmp []Comparator) {
+	deletedKeys := t.dataStorage.DeleteAllWhere(
+		func(row *Row) bool {
+			isOk := true
+			for _, comparator := range cmp {
+				if !comparator.compare(row) {
+					isOk = false
+					break
+				}
+			}
+			return isOk
+		},
+	)
 
-}
+	if len(t.indexes) == 0 {
 
-func (t *Table) updateDataWhere() {
+	}
+	var wg sync.WaitGroup
+	for _, idx := range t.indexes {
+		wg.Add(1)
+		go func(idx *index) {
+			defer wg.Done()
+			idx.tree.RemoveWithValues(deletedKeys)
+		}(idx)
+	}
 
+	wg.Wait()
 }
