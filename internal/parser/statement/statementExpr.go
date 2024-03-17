@@ -1,48 +1,33 @@
 package statement
 
-import (
-	"strings"
+// type StmtExpr interface {
+// 	Execute() error
+// }
 
-	"subd/internal/parser/statement/ddl"
-	"subd/internal/parser/statement/dql"
-)
+// func ParseStatement(request string) []StmtExpr {
 
-type StmtExpr interface {
-	Execute() error
-}
+// 	return nil
+// }
 
-func ParseStatement(request string) []StmtExpr {
+// func CreateQuery(queryText string) StmtExpr {
+// 	queryType := strings.Fields(queryText)[0]
 
-	return nil
-}
+// 	var query StmtExpr
 
-func CreateQuery(queryText string) StmtExpr {
-	queryType := strings.Fields(queryText)[0]
+// 	switch strings.ToLower(queryType) {
+// 	case "DROP":
+// 		query = &ddl.Drop{
+// 			Expr: queryText,
+// 		}
+// 	case "CREATE":
+// 		query = &ddl.Create{
+// 			Expr: queryText,
+// 		}
+// 	case "SELECT":
+// 		query = &dql.Select{
+// 			Expr: queryText,
+// 		}
+// 	}
 
-	var query StmtExpr
-
-	switch strings.ToLower(queryType) {
-	case "DROP":
-		query = &ddl.Drop{
-			Expr: queryText,
-		}
-	case "CREATE":
-		query = &ddl.Create{
-			Expr: queryText,
-		}
-	case "SELECT":
-		query = &dql.Select{
-			Expr: queryText,
-		}
-	}
-
-	return query
-}
-
-// const statements = `DENY GRANT REVOKE ALTER CREATE DROP RENAME TRUNCATE DELETE INSERT MERGE
-// UPDATE CASE FROM GROUP BY HAVING JOIN LIMIT ORDER BY SELECT USING WHERE`
-
-const (
-	CREATE = 1
-	FROM   = 2
-)
+// 	return query
+// }

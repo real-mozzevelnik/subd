@@ -1,10 +1,16 @@
 package ddl
 
+import "subd/internal/db"
+
 type Drop struct {
-	Expr string
+	DataBase *db.DB
+	Request  string
 }
 
-func (s *Drop) Execute() error {
-	s.Expr = ""
-	return nil
+func (d *Drop) Prepare() {
+
+}
+
+func (d *Drop) Execute() {
+
 }

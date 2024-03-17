@@ -1,21 +1,23 @@
 package parser
 
 import (
-	"fmt"
 	"strings"
 
+	"subd/internal/db"
 	"subd/internal/parser/statement"
 )
 
 type Parser struct {
+	DataBase       *db.DB
 	originRequest  string
-	statementQueue []statement.Statement
+	statementQueue []*statement.Statement
 }
 
-func New(request string) *Parser {
+func New(request string, dataBase *db.DB) *Parser {
 	return &Parser{
+		DataBase:       dataBase,
 		originRequest:  request,
-		statementQueue: make([]statement.Statement, 0),
+		statementQueue: make([]*statement.Statement, 0),
 	}
 }
 
@@ -25,7 +27,7 @@ func (p *Parser) Accept(request string) {
 
 // forming a queue of statements
 func (p *Parser) Prepare() error {
-	//REFACTOR: Is it right way to clear a ' sign from oroginal request and check of type correctness
+	//REFACTOR: Is it right way to clear a ' sign from oroginal request and check of type
 	//			in INSERT Execute() method?
 	query := strings.NewReplacer("\t", "", "\n", "", "'", "").Replace(p.originRequest)
 
@@ -34,14 +36,15 @@ func (p *Parser) Prepare() error {
 
 	//parse compound request on separate
 	for i := 0; i < len(subRequests)-1; i++ {
-		statement := statement.New(subRequests[i])
+		statement := statement.New(subRequests[i], p.DataBase)
 		//parse statement and prepare it for execute method
-		statement.Prepare()
+		(*statement).Prepare()
+		p.statementQueue = append(p.statementQueue, statement)
 	}
 
 	// show origin requests
 	for i := 0; i < len(p.statementQueue); i++ {
-		fmt.Printf("\n%d : %s", i, p.statementQueue[i].OriginText())
+		// fmt.Printf("\n%d : %s", i, p.statementQueue[i].OriginText())
 	}
 
 	return nil
@@ -53,13 +56,19 @@ TODO: сделать функцию, которая за 1 вызов доаст
 Если SQL запрос не подразумевает получение множество с выборкой
 данных, то возвращается пустое множество.
 */
-func (p *Parser) Execute() (map[string]string, error) {
 
-	for _, stmt := range p.statementQueue {
-		stmt.Execute()
+func (p *Parser) Execute() (map[string]string, error) {
+	for _, statement := range p.statementQueue {
+		(*statement).Execute()
 	}
 
 	return nil, nil
+}
+
+func StatementHandler(parser *Parser) func() *db.Result {
+	return func() *db.Result {
+		return nil
+	}
 }
 
 func (p *Parser) OriginText() string {

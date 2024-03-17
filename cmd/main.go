@@ -7,9 +7,10 @@ import (
 
 func main() {
 	database := createDB()
-	parser := parser.New("")
+	parser := parser.New("", database)
 
-	request := `INSERT INTO users (name, age, job) 
+	request := `
+	INSERT INTO users (name, age, job) 
 	VALUES
 	(
 		'Vadim', 
@@ -22,10 +23,33 @@ func main() {
 		'pidr'
 	);
 
-	SELECT name FROM users WHERE job == pidr;`
+	SELECT name FROM users;
+
+	SELECT name FROM users WHERE job == clown AND name != andrey;
+	
+	DELETE FROM users WHERE job == clown AND name == andrey;
+
+	SELECT name FROM users;
+	`
+	// database.Delete("users")
 
 	parser.Accept(request)
+
 	parser.Prepare()
+
+	// REFACTOR: rework parser interface, for example:
+	/*
+		(data typeof *db.Result)
+
+		pullRequest := statement.StatementHandler(parser)
+		data = pullRequest()
+		fmt.Println(data)
+
+		while(data != nil) {
+			data = pullRequst()
+		}
+	*/
+
 	parser.Execute()
 
 	// data := database.SelectWhere("users", []db.Comparator{c1, c2})
@@ -54,7 +78,7 @@ func createDB() *db.DB {
 	database.Insert("users", map[string]interface{}{
 		"name": "andrey",
 		"age":  10,
-		"job":  "child",
+		"job":  "clown",
 	})
 
 	database.Insert("users", map[string]interface{}{
