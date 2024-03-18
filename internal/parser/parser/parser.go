@@ -13,10 +13,9 @@ type Parser struct {
 	statementQueue []*statement.Statement
 }
 
-func New(request string, dataBase *db.DB) *Parser {
+func New(dataBase *db.DB) *Parser {
 	return &Parser{
 		DataBase:       dataBase,
-		originRequest:  request,
 		statementQueue: make([]*statement.Statement, 0),
 	}
 }
@@ -24,6 +23,15 @@ func New(request string, dataBase *db.DB) *Parser {
 func (p *Parser) Accept(request string) {
 	p.originRequest = request
 	p.prepare()
+}
+
+func (p *Parser) Execute() []*db.Row {
+	index := 0
+	for index = 0; index < len(p.statementQueue)-1; index++ {
+		(*p.statementQueue[index]).Execute()
+	}
+	//return db.Row last statement
+	return (*p.statementQueue[index]).Execute()
 }
 
 // forming a queue of statements
@@ -51,19 +59,4 @@ func (p *Parser) prepare() error {
 	}
 
 	return nil
-}
-
-// return pullRequest function, whick pull a one request from the queue and executes it
-func StatementHandler(parser *Parser) (pullLength int, pullRequest func() []*db.Row) {
-	index := -1
-	queueLength := len(parser.statementQueue)
-
-	return queueLength, func() []*db.Row {
-		if index < queueLength {
-			index++
-			return (*parser.statementQueue[index]).Execute()
-		} else {
-			panic("Pull request is empty")
-		}
-	}
 }

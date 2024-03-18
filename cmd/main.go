@@ -9,14 +9,20 @@ import (
 
 func main() {
 	database := createDB()
-	requestParser := parser.New("", database)
+	requestParser := parser.New(database)
 
-	requestsTest(requestParser)
+	sql := "insert into users (name, age, job) values ('bob', 18, 'pivo')"
+	requestParser.Accept(sql)
+	requestParser.Execute()
 
-	/*
-		before tests it is necessary to comment the logs block in Insert/Select Execute() method
-	*/
-	//timingTest(requestParser)
+	sql = "select name from users"
+	requestParser.Accept(sql)
+	data := requestParser.Execute()
+
+	for _, d := range data {
+		fmt.Printf("%v\n", d)
+	}
+	timingTest(requestParser)
 
 	dropDB(database)
 }
@@ -26,9 +32,10 @@ func requestsTest(requestParser *parser.Parser) {
 		INSERT INTO users (name, age, job) VALUES (Sanya, 19, dev);
 		
 		INSERT INTO users (name, age, job) 
-		VALUES(Vadim, 
+		VALUES("Vadim", 
 			46, 
-			dev
+			"dev"
+			
 		);
 		
 		INSERT INTO users (name, age, job) VALUES      (Bob, 89, dev);
@@ -39,32 +46,23 @@ func requestsTest(requestParser *parser.Parser) {
 
 		DELETE FROM users WHERE job == clown AND name == andrey;
 
-		SELECT name FROM users
+		SELECT name FROM users;
+
+		DROP TABLE users;
 	`
 
 	requestParser.Accept(request)
-
-	pullLen, pullRequest := parser.StatementHandler(requestParser)
-
-	fmt.Printf("pullLen = %d\n", pullLen)
-
-	for i := 0; i < pullLen; i++ {
-		pullRequest()
-	}
+	requestParser.Execute()
 }
 
 func timingTest(requestParser *parser.Parser) {
-	insRequest := "INSERT INTO users (name, age, job) VALUES (Sanya, 10, dev);"
+	insRequest := "InSeRt InTo users	(name, age, job)VaLuEs		('Sanya', 10, 'dev');"
 	insCount := 200000
 
 	start := time.Now()
 	for i := 0; i < insCount; i++ {
 		requestParser.Accept(insRequest)
-
-		pullLen, pullRequest := parser.StatementHandler(requestParser)
-		for i := 0; i < pullLen; i++ {
-			pullRequest()
-		}
+		requestParser.Execute()
 	}
 
 	elapsed := time.Since(start)
@@ -78,11 +76,7 @@ func timingTest(requestParser *parser.Parser) {
 	start = time.Now()
 	for i := 0; i < selCount; i++ {
 		requestParser.Accept(selRequest)
-
-		pullLen, pullRequest := parser.StatementHandler(requestParser)
-		for i := 0; i < pullLen; i++ {
-			pullRequest()
-		}
+		requestParser.Execute()
 	}
 
 	elapsed = time.Since(start)
@@ -96,11 +90,7 @@ func timingTest(requestParser *parser.Parser) {
 	start = time.Now()
 	for i := 0; i < selCount; i++ {
 		requestParser.Accept(selWhereRequest)
-
-		pullLen, pullRequest := parser.StatementHandler(requestParser)
-		for i := 0; i < pullLen; i++ {
-			pullRequest()
-		}
+		requestParser.Execute()
 	}
 
 	elapsed = time.Since(start)

@@ -19,30 +19,15 @@ func New(request string, database *db.DB) *Statement {
 
 	switch strings.ToLower(keyWord) {
 	case "select":
-		statement = &dql.Select{
-			Request:  request,
-			DataBase: database,
-		}
+		statement = dql.NewSelect(database, request)
 	case "insert":
-		statement = &dml.Insert{
-			Request:  request,
-			DataBase: database,
-		}
+		statement = dml.NewInsert(database, request)
 	case "delete":
-		statement = &dml.Delete{
-			Request:  request,
-			DataBase: database,
-		}
+		statement = dml.NewDelete(database, request)
 	case "update":
-		statement = &dml.Update{
-			DataBase: database,
-			Request:  request,
-		}
+		statement = dml.NewUpdate(database, request)
 	case "drop":
-		statement = &ddl.Drop{
-			DataBase: database,
-			Request:  request,
-		}
+		statement = ddl.NewDrop(database, request)
 	}
 
 	return &statement

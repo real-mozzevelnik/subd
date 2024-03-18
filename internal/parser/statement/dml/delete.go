@@ -1,30 +1,36 @@
 package dml
 
 import (
-	"fmt"
 	"strings"
 	"subd/internal/db"
 	"subd/internal/parser/statement/dql"
 )
 
 type Delete struct {
-	DataBase    *db.DB
-	Request     string
+	dataBase    *db.DB
+	request     string
 	tableName   string
 	comparators []db.Comparator
 }
 
+func NewDelete(db *db.DB, req string) *Delete {
+	return &Delete{
+		dataBase: db,
+		request:  req,
+	}
+}
+
 func (d *Delete) Prepare() {
-	words := strings.Fields(d.Request)
+	words := strings.Fields(d.request)
 	wordsLen := len(words)
 
 	for index := 0; index < wordsLen-1; index++ {
-		if words[index] == "DELETE" {
+		if strings.ToLower(words[index]) == "delete" {
 			index += 2
 			d.tableName = words[index]
 			continue
 		}
-		if words[index] == "WHERE" {
+		if strings.ToLower(words[index]) == "where" {
 			for {
 				if index >= wordsLen-1 {
 					break
@@ -39,7 +45,7 @@ func (d *Delete) Prepare() {
 				d.comparators = append(d.comparators, comparator)
 				index += 4
 
-				if (index < wordsLen-1) && (words[index] == "AND") {
+				if (index < wordsLen-1) && (strings.ToLower(words[index]) == "and") {
 					continue
 				}
 				break
@@ -48,23 +54,13 @@ func (d *Delete) Prepare() {
 	}
 }
 
+// REFACTOR: refactor return value
 func (d *Delete) Execute() []*db.Row {
 	if len(d.comparators) == 0 {
-		d.DataBase.Delete(d.tableName)
+		d.dataBase.Delete(d.tableName)
 
 	} else {
-		d.DataBase.DeleteWhere(d.tableName, d.comparators)
-	}
-
-	// REFACTOR: refactor return value
-
-	// LOGS BLOCK
-	{
-		if len(d.comparators) == 0 {
-			fmt.Printf("\ndelete %s table\n", d.tableName)
-		} else {
-			fmt.Printf("\ndelete %s = %s from %s\n", d.comparators[0].FieldName, d.comparators[0].Value, d.tableName)
-		}
+		d.dataBase.DeleteWhere(d.tableName, d.comparators)
 	}
 
 	return nil
