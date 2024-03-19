@@ -1,5 +1,11 @@
 package btree
 
+import (
+	"subd/internal/utils"
+
+	mapset "github.com/deckarep/golang-set/v2"
+)
+
 const (
 	DefaultBTreeDegree = 128
 	freelistSize       = 32
@@ -29,6 +35,14 @@ func (t *Tree) GetByKey(key KeyType) *pair {
 		return nil
 	}
 	return t.root.getByKey(key)
+}
+
+func (t *Tree) GetWithConditions(cmp []*utils.Comparator) mapset.Set[string] {
+	if t.root == nil {
+		return nil
+	}
+
+	return t.root.getWithConditions(cmp)
 }
 
 func (t *Tree) Put(key KeyType, value string) {

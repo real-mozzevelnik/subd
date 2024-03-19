@@ -1,5 +1,7 @@
 package db
 
+import "subd/internal/utils"
+
 type DB struct {
 	tables map[string]*table
 }
@@ -31,12 +33,12 @@ func (db *DB) DropIndex(tableName, fieldName string) {
 	db.tables[tableName].dropIndex(fieldName)
 }
 
-func (db *DB) Select(tableName string) []*Row {
-	return db.tables[tableName].selectData()
+func (db *DB) Select(tableName string, searchedFields []string) []map[string]interface{} {
+	return db.tables[tableName].selectData(searchedFields)
 }
 
-func (db *DB) SelectWhere(tableName string, cmp []Comparator) []*Row {
-	return db.tables[tableName].selectDataWhere(cmp)
+func (db *DB) SelectWhere(tableName string, cmp []utils.Comparator, searchedFields []string) []map[string]interface{} {
+	return db.tables[tableName].selectDataWhere(cmp, searchedFields)
 }
 
 func (db *DB) Insert(tableName string, data map[string]interface{}) {
@@ -47,6 +49,6 @@ func (db *DB) Delete(tableName string) {
 	db.tables[tableName].deleteData()
 }
 
-func (db *DB) DeleteWhere(tableName string, cmp []Comparator) {
+func (db *DB) DeleteWhere(tableName string, cmp []utils.Comparator) {
 	db.tables[tableName].deleteDataWhere(cmp)
 }

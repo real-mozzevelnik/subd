@@ -6,6 +6,9 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"subd/internal/utils"
+
+	mapset "github.com/deckarep/golang-set/v2"
 )
 
 type inode []*pair
@@ -242,4 +245,26 @@ func (n *node) removeWithValues(values map[string]interface{}) (emptyItemsKeys [
 		emptyItemsKeys = append(emptyItemsKeys, child.removeWithValues(values)...)
 	}
 	return emptyItemsKeys
+}
+
+func (n *node) getWithConditions(cmp []*utils.Comparator) (keySet mapset.Set[string]) {
+	keysSet := mapset.NewSet[string]()
+
+	for _, item := range n.inodes {
+		isOk := true
+		for _, comparator := range cmp {
+			if !comparator.Compare(item.Key) {
+				isOk = false
+			}
+		}
+		if (isOk) && len(cmp) > 0 {
+			keysSet.Append(item.Value...)
+		}
+	}
+
+	for _, child := range n.children {
+		keysSet.Append(child.getWithConditions(cmp).ToSlice()...)
+	}
+
+	return keysSet
 }

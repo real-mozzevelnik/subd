@@ -1,6 +1,8 @@
 package db
 
-import "sync"
+import (
+	"sync"
+)
 
 type dataStorage struct {
 	Collection map[string]*Row
@@ -19,28 +21,36 @@ func (d *dataStorage) Add(key string, data map[string]interface{}) {
 	d.Collection[key] = newRow(data)
 }
 
-func (d *dataStorage) ReadAll() []*Row {
-	result := make([]*Row, 0)
+func (d *dataStorage) ReadAll(searchedFields []string) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0)
 
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
 
 	for _, data := range d.Collection {
-		result = append(result, data)
+		dataWithSearchedFields := make(map[string]interface{})
+		for _, searchedField := range searchedFields {
+			dataWithSearchedFields[searchedField] = data.Data[searchedField]
+		}
+		result = append(result, dataWithSearchedFields)
 	}
 
 	return result
 }
 
-func (d *dataStorage) ReadAllWhere(where func(row *Row) bool) []*Row {
-	result := make([]*Row, 0)
+func (d *dataStorage) ReadAllWhere(where func(row *Row) bool, searchedFields []string) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0)
 
 	d.Mutex.Lock()
 	defer d.Mutex.Unlock()
 
 	for _, data := range d.Collection {
 		if where(data) {
-			result = append(result, data)
+			dataWithSearchedFields := make(map[string]interface{})
+			for _, searchedField := range searchedFields {
+				dataWithSearchedFields[searchedField] = data.Data[searchedField]
+			}
+			result = append(result, dataWithSearchedFields)
 		}
 	}
 

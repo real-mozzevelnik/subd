@@ -1,4 +1,4 @@
-package db
+package utils
 
 // operations:
 // "eq" ==
@@ -21,8 +21,7 @@ func NewComparator(fieldName string, value interface{}, operation string) Compar
 	}
 }
 
-func (c Comparator) compare(row *Row) bool {
-	value := row.Data[c.FieldName]
+func (c Comparator) Compare(value interface{}) bool {
 	switch c.Operation {
 	case "eq":
 		if value == c.Value {

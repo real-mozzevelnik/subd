@@ -2,8 +2,10 @@ package db
 
 import (
 	"runtime"
+	"subd/internal/utils"
 	"sync"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/google/uuid"
 )
 
@@ -45,22 +47,23 @@ func (t *table) dropIndex(fieldName string) {
 	runtime.GC()
 }
 
-func (t *table) selectData() []*Row {
-	return t.dataStorage.ReadAll()
+func (t *table) selectData(searchedFields []string) []map[string]interface{} {
+	return t.dataStorage.ReadAll(searchedFields)
 }
 
-func (t *table) selectDataWhere(cmp []Comparator) []*Row {
+func (t *table) selectDataWhere(cmp []utils.Comparator, searchedFields []string) []map[string]interface{} {
 	return t.dataStorage.ReadAllWhere(
 		func(row *Row) bool {
 			isOk := true
 			for _, comparator := range cmp {
-				if !comparator.compare(row) {
+				if !comparator.Compare(row.Data[comparator.FieldName]) {
 					isOk = false
 					break
 				}
 			}
 			return isOk
 		},
+		searchedFields,
 	)
 }
 
@@ -106,12 +109,12 @@ func (t *table) deleteData() {
 	wg.Wait()
 }
 
-func (t *table) deleteDataWhere(cmp []Comparator) {
+func (t *table) deleteDataWhere(cmp []utils.Comparator) {
 	deletedKeys := t.dataStorage.DeleteAllWhere(
 		func(row *Row) bool {
 			isOk := true
 			for _, comparator := range cmp {
-				if !comparator.compare(row) {
+				if !comparator.Compare(row.Data[comparator.FieldName]) {
 					isOk = false
 					break
 				}
@@ -121,7 +124,7 @@ func (t *table) deleteDataWhere(cmp []Comparator) {
 	)
 
 	if len(t.indexes) == 0 {
-
+		return
 	}
 	var wg sync.WaitGroup
 	for _, idx := range t.indexes {
@@ -133,4 +136,29 @@ func (t *table) deleteDataWhere(cmp []Comparator) {
 	}
 
 	wg.Wait()
+}
+
+func (t *table) searchInIndexes(cmp []utils.Comparator) (keySet mapset.Set[string], usedComporators mapset.Set[*utils.Comparator]) {
+	keySet = mapset.NewSet[string]()
+	usedComporators = mapset.NewSet[*utils.Comparator]()
+
+	var wg sync.WaitGroup
+	for fieldName, idx := range t.indexes {
+		wg.Add(1)
+		go func(fieldName string, idx *index) {
+			defer wg.Done()
+			indexComparators := make([]*utils.Comparator, 0)
+			for _, comparator := range cmp {
+				if comparator.FieldName == fieldName {
+					indexComparators = append(indexComparators, &comparator)
+				}
+			}
+
+			usedComporators.Append(indexComparators...)
+			keySet.Intersect(idx.tree.GetWithConditions(indexComparators))
+		}(fieldName, idx)
+	}
+
+	wg.Wait()
+	return keySet, usedComporators
 }
