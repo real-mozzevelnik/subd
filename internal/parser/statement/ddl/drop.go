@@ -19,17 +19,16 @@ func NewDrop(db *db.DB, req string) *Drop {
 }
 
 func (d *Drop) Prepare() {
-	re := regexp.MustCompile(`DROP TABLE (.*)`)
+	re := regexp.MustCompile(`(?i)DROP\s+(?i)TABLE\s+(.*)`)
 	match := re.FindStringSubmatch(d.request)
 
 	d.tableName = match[1]
-
 	if d.tableName == "" {
 		panic("Empty table name")
 	}
 }
 
-func (d *Drop) Execute() []*db.Row {
+func (d *Drop) Execute() []map[string]interface{} {
 	d.dataBase.DropTable(d.tableName)
 	return nil
 }

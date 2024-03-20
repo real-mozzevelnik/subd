@@ -25,12 +25,14 @@ func (p *Parser) Accept(request string) {
 	p.prepare()
 }
 
-func (p *Parser) Execute() []*db.Row {
+func (p *Parser) Execute() []map[string]interface{} {
 	index := 0
 	for index = 0; index < len(p.statementQueue)-1; index++ {
+		(*p.statementQueue[index]).Prepare()
 		(*p.statementQueue[index]).Execute()
 	}
-	//return db.Row last statement
+	//return map[string]interface{} last statement
+	(*p.statementQueue[index]).Prepare()
 	return (*p.statementQueue[index]).Execute()
 }
 
@@ -53,8 +55,6 @@ func (p *Parser) prepare() error {
 	//parse compound request on separate
 	for i := 0; i < len(subRequests)-1; i++ {
 		statement := statement.New(subRequests[i], p.DataBase)
-		//parse statement and prepare it for execute method
-		(*statement).Prepare()
 		p.statementQueue = append(p.statementQueue, statement)
 	}
 

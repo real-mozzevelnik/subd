@@ -10,7 +10,7 @@ import (
 
 type Statement interface {
 	Prepare()
-	Execute() []*db.Row
+	Execute() []map[string]interface{}
 }
 
 func New(request string, database *db.DB) *Statement {
@@ -26,6 +26,8 @@ func New(request string, database *db.DB) *Statement {
 		statement = dml.NewDelete(database, request)
 	case "update":
 		statement = dml.NewUpdate(database, request)
+	case "create":
+		statement = ddl.NewCreate(database, request)
 	case "drop":
 		statement = ddl.NewDrop(database, request)
 	}

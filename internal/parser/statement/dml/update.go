@@ -18,7 +18,7 @@ func (i *Update) Prepare() {
 
 }
 
-func (i *Update) Execute() []*db.Row {
+func (i *Update) Execute() []map[string]interface{} {
 
 	return nil
 }

@@ -9,50 +9,34 @@ import (
 
 func main() {
 	database := createDB()
-	requestParser := parser.New(database)
+	parser := parser.New(database)
 
-	sql := "insert into users (name, age, job) values ('bob', 18, 'pivo')"
-	requestParser.Accept(sql)
-	requestParser.Execute()
+	sql := `
+			insert into users(name, age, job) values('vadim', 54, 'antifriz');
+			
+			insert into users(name, age, job) values('andrey', 10, 'clown');
+			
+			insert into users(name, age, job) values('anton', 50, 'ded');
+			
+			insert into users(name, age, job) values('sanya', 10, 'clown');
+			
+			insert into users(name, age, job) values('nikita', 90, 'ded');
+			
+			SELECT name, age FROM users where name == '10'
+	`
 
-	sql = "select name from users"
-	requestParser.Accept(sql)
-	data := requestParser.Execute()
+	parser.Accept(sql)
+	data := parser.Execute()
 
+	// data := database.SelectWhere("popik", cmp, searchFields)
+	fmt.Println("\nResult set:")
 	for _, d := range data {
 		fmt.Printf("%v\n", d)
 	}
-	timingTest(requestParser)
+
+	// timingTest(parser)
 
 	dropDB(database)
-}
-
-func requestsTest(requestParser *parser.Parser) {
-	request := `
-		INSERT INTO users (name, age, job) VALUES (Sanya, 19, dev);
-		
-		INSERT INTO users (name, age, job) 
-		VALUES("Vadim", 
-			46, 
-			"dev"
-			
-		);
-		
-		INSERT INTO users (name, age, job) VALUES      (Bob, 89, dev);
-
-		SELECT name FROM users;
-
-		SELECT name FROM users WHERE job == clown AND name != andrey;
-
-		DELETE FROM users WHERE job == clown AND name == andrey;
-
-		SELECT name FROM users;
-
-		DROP TABLE users;
-	`
-
-	requestParser.Accept(request)
-	requestParser.Execute()
 }
 
 func timingTest(requestParser *parser.Parser) {
@@ -84,7 +68,7 @@ func timingTest(requestParser *parser.Parser) {
 
 	// SELECT WHERE
 
-	selWhereRequest := "SELECT name FROM users WHERE job == clown AND name == vadim"
+	selWhereRequest := "SELECT name FROM users WHERE job == 'clown'"
 	selWhereCount := 100
 
 	start = time.Now()
@@ -99,37 +83,25 @@ func timingTest(requestParser *parser.Parser) {
 
 func createDB() *db.DB {
 	database := db.NewDB()
+	parser := parser.New(database)
 
-	database.Createtable(
-		"users",
-		map[string]interface{}{
-			"name": "TEXT",
-			"age":  "INTEGER",
-			"job":  "TEXT",
-		},
-	)
-
-	database.Insert("users", map[string]interface{}{
-		"name": "vasya",
-		"age":  30,
-		"job":  "clown",
-	})
-
-	database.Insert("users", map[string]interface{}{
-		"name": "andrey",
-		"age":  10,
-		"job":  "clown",
-	})
-
-	database.Insert("users", map[string]interface{}{
-		"name": "anton",
-		"age":  50,
-		"job":  "ded",
-	})
+	sql := `
+		create table users (
+			name TEXT,
+			age INTEGER,
+			job TEXT
+		);
+	`
+	parser.Accept(sql)
+	parser.Execute()
 
 	return database
 }
 
 func dropDB(database *db.DB) {
-	database.DropTable("users")
+	parser := parser.New(database)
+
+	sql := `drop table users;`
+	parser.Accept(sql)
+	parser.Execute()
 }

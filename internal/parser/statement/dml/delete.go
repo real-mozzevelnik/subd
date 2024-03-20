@@ -4,13 +4,14 @@ import (
 	"strings"
 	"subd/internal/db"
 	"subd/internal/parser/statement/dql"
+	"subd/internal/utils"
 )
 
 type Delete struct {
 	dataBase    *db.DB
 	request     string
 	tableName   string
-	comparators []db.Comparator
+	comparators []utils.Comparator
 }
 
 func NewDelete(db *db.DB, req string) *Delete {
@@ -36,7 +37,7 @@ func (d *Delete) Prepare() {
 					break
 				}
 
-				comparator := db.NewComparator(
+				comparator := utils.NewComparator(
 					words[index+1],
 					words[index+3],
 					dql.OperatorsMap[words[index+2]],
@@ -55,7 +56,7 @@ func (d *Delete) Prepare() {
 }
 
 // REFACTOR: refactor return value
-func (d *Delete) Execute() []*db.Row {
+func (d *Delete) Execute() []map[string]interface{} {
 	if len(d.comparators) == 0 {
 		d.dataBase.Delete(d.tableName)
 
