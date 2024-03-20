@@ -22,7 +22,7 @@ func main() {
 			
 			insert into users(name, age, job) values('nikita', 90, 'ded');
 			
-			SELECT name, age FROM users where name == '10'
+			SELECT name, age FROM users where age > 10;
 	`
 
 	parser.Accept(sql)
