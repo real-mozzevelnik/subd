@@ -71,29 +71,26 @@ func (s *Select) newWhereComparator(whereExpr []string) {
 	case "TEXT":
 		{
 			//whereExpr[0] - field, [1] - operator, [2] - value
+			if whereExpr[1] == ">=" || whereExpr[1] == "<=" || whereExpr[1] == "<" || whereExpr[1] == ">" {
+				err = fmt.Errorf("\"%s\" operator isn't available for TEXT comparision", whereExpr[1])
+				break
+			}
+
 			if whereExpr[2][0] == '\'' || whereExpr[2][0] == '"' {
-				if whereExpr[1] == ">=" || whereExpr[1] == "<=" || whereExpr[1] == "<" || whereExpr[1] == ">" {
-					err = fmt.Errorf("<%s> operator isn't available for TEXT comparision", whereExpr[1])
-				}
 				whereExpr[2] = replacer.Replace(whereExpr[2])
 				//no need to convert
 				value = whereExpr[2]
 			} else {
 				err = fmt.Errorf("comparision field <%s> typeof(TEXT) with no string: <%s>", whereExpr[0], whereExpr[2])
+				break
 			}
 		}
 	case "INTEGER":
 		{
 			if whereExpr[2][0] == '"' || whereExpr[2][0] == '\'' {
 				err = fmt.Errorf("comprasion field <%s> typeof(INTEGER) with TEXT: <%s>", whereExpr[0], whereExpr[2])
-			} else {
-				// conver str to int
-				value, _ = strconv.ParseInt(whereExpr[2], 10, 0)
 			}
-		}
-	case "FLOAT":
-		{
-
+			value, _ = strconv.ParseInt(whereExpr[2], 10, 0)
 		}
 	}
 

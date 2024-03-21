@@ -24,8 +24,7 @@ func NewInsert(db *db.DB, req string) *Insert {
 }
 
 func (i *Insert) Prepare() {
-	//re := regexp.MustCompile(`(?i)INSERT\s+(?i)INTO\s+(.*?)\s*[\s\(](.*?)\)\s*(?i)VALUES\s*[\s\(](.*)\)`)
-	re := regexp.MustCompile(`(.*?)\((.*?)\)\s*(?i)VALUES\((.*)\)`)
+	re := regexp.MustCompile(`(\w+)\((.*?)\)\s*(?i)VALUES\((.*)\)`)
 	match := re.FindStringSubmatch(i.request)
 
 	i.tableName = match[1]

@@ -24,7 +24,7 @@ func New(request string, database *db.DB) *Statement {
 	case "insert":
 		statement = dml.NewInsert(database, request[12:])
 	case "delete":
-		statement = dml.NewDelete(database, request)
+		statement = dml.NewDelete(database, request[12:])
 	case "update":
 		statement = dml.NewUpdate(database, request[7:])
 	case "create":

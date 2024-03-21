@@ -11,42 +11,12 @@ func main() {
 	database := createDB()
 	parser := parser.New(database)
 
-	sql := `
-			insert into users(name, age, job) values('vadim', 54, 'antifriz');
-			
-			insert into users(name, age, job) values('andrey', 10, 'clown');
-			
-			insert into users(name, age, job) values('anton', 50, 'ded');
-			
-			insert into users(name, age, job) values('sanya', 10, 'clown');
-			
-			insert into users(name, age, job) values('nikita', 90, 'ded');
-	`
+	timingTest(parser)
 
-	// timingTest(parser)
-
+	sql := `UPDATE users SET job = 'popa', age = 12 WHERE name == 'andrey';
+	 		UpDATE   users SeT job = 'voka', age = 16`
 	parser.Accept(sql)
 	parser.Execute()
-
-	// sqlSelect := `SELECT (name, age, job) FROM users`
-	sqlSelect := `CREATE INDEX users ON name`
-	parser.Accept(sqlSelect)
-	data := parser.Execute()
-	fmt.Println("\nResult set:")
-	for _, d := range data {
-		fmt.Printf("%v\n", d)
-	}
-
-	// sql = `DELETE name FROM users;`
-	// parser.Accept(sql)
-	// parser.Execute()
-
-	parser.Accept(sqlSelect)
-	data = parser.Execute()
-	fmt.Println("\nResult set:")
-	for _, d := range data {
-		fmt.Printf("%v\n", d)
-	}
 
 	dropDB(database)
 }
@@ -103,7 +73,18 @@ func createDB() *db.DB {
 			age INTEGER,
 			job TEXT
 		);
+
+		insert into users(name, age, job) values('vadim', 54, 'antifriz');
+			
+		insert into users(name, age, job) values('andrey', 10, 'clown');
+			
+		insert into users(name, age, job) values('anton', 50, 'ded');
+			
+		insert into users(name, age, job) values('sanya', 10, 'clown');
+			
+		insert into users(name, age) values('nikita', 90);
 	`
+
 	parser.Accept(sql)
 	parser.Execute()
 
@@ -112,8 +93,6 @@ func createDB() *db.DB {
 
 func dropDB(database *db.DB) {
 	parser := parser.New(database)
-
-	sql := `drop index users on name; drop table users;`
-	parser.Accept(sql)
+	parser.Accept(`drop table users`)
 	parser.Execute()
 }
