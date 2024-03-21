@@ -1,9 +1,11 @@
 package db
 
 import (
+	"fmt"
 	"runtime"
 	"subd/internal/utils"
 	"sync"
+	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/google/uuid"
@@ -52,10 +54,45 @@ func (t *table) selectData(searchedFields []string) []map[string]interface{} {
 }
 
 func (t *table) selectDataWhere(cmp []utils.Comparator, searchedFields []string) []map[string]interface{} {
-	return t.dataStorage.ReadAllWhere(
+	start := time.Now()
+
+	areIndexesUsed := false
+	for _, comp := range cmp {
+		_, ok := t.indexes[comp.FieldName]
+		if ok {
+			areIndexesUsed = true
+			break
+		}
+	}
+	if len(t.indexes) == 0 || !areIndexesUsed {
+		return t.dataStorage.ReadAllWhere(
+			func(row *Row) bool {
+				isOk := true
+				for _, comparator := range cmp {
+					if !comparator.Compare(row.Data[comparator.FieldName]) {
+						isOk = false
+						break
+					}
+				}
+				return isOk
+			},
+			searchedFields,
+		)
+	}
+
+	comporatorsSet := mapset.NewSet[*utils.Comparator]()
+	keySet, usedComporatorsFields := t.searchInIndexes(cmp)
+	for _, comporator := range cmp {
+		if !usedComporatorsFields.ContainsOne(comporator.FieldName) {
+			comporatorsSet.Add(&comporator)
+		}
+	}
+	unusedCmp := comporatorsSet.ToSlice()
+
+	r := t.dataStorage.ReadAllWhereWithGivenKeys(
 		func(row *Row) bool {
 			isOk := true
-			for _, comparator := range cmp {
+			for _, comparator := range unusedCmp {
 				if !comparator.Compare(row.Data[comparator.FieldName]) {
 					isOk = false
 					break
@@ -64,7 +101,12 @@ func (t *table) selectDataWhere(cmp []utils.Comparator, searchedFields []string)
 			return isOk
 		},
 		searchedFields,
+		keySet.ToSlice(),
 	)
+
+	elapsed := time.Since(start)
+	fmt.Println(elapsed)
+	return r
 }
 
 func (t *table) insertData(data map[string]interface{}) {
@@ -138,9 +180,10 @@ func (t *table) deleteDataWhere(cmp []utils.Comparator) {
 	wg.Wait()
 }
 
-func (t *table) searchInIndexes(cmp []utils.Comparator) (keySet mapset.Set[string], usedComporators mapset.Set[*utils.Comparator]) {
+func (t *table) searchInIndexes(cmp []utils.Comparator) (keySet mapset.Set[string], usedComporatorsFields mapset.Set[string]) {
 	keySet = mapset.NewSet[string]()
-	usedComporators = mapset.NewSet[*utils.Comparator]()
+	isKeySetEmpty := true
+	usedComporatorsFields = mapset.NewSet[string]()
 
 	var wg sync.WaitGroup
 	for fieldName, idx := range t.indexes {
@@ -154,11 +197,19 @@ func (t *table) searchInIndexes(cmp []utils.Comparator) (keySet mapset.Set[strin
 				}
 			}
 
-			usedComporators.Append(indexComparators...)
-			keySet.Intersect(idx.tree.GetWithConditions(indexComparators))
+			for _, comporator := range indexComparators {
+				usedComporatorsFields.Add(comporator.FieldName)
+			}
+
+			if isKeySetEmpty {
+				isKeySetEmpty = false
+				keySet.Append(idx.tree.GetWithConditions(indexComparators).ToSlice()...)
+			} else {
+				keySet.Intersect(idx.tree.GetWithConditions(indexComparators))
+			}
 		}(fieldName, idx)
 	}
 
 	wg.Wait()
-	return keySet, usedComporators
+	return keySet, usedComporatorsFields
 }

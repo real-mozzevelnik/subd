@@ -57,6 +57,26 @@ func (d *dataStorage) ReadAllWhere(where func(row *Row) bool, searchedFields []s
 	return result
 }
 
+func (d *dataStorage) ReadAllWhereWithGivenKeys(where func(row *Row) bool, searchedFields []string, keys []string) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0)
+
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
+
+	for _, key := range keys {
+		data := d.Collection[key]
+		if where(data) {
+			dataWithSearchedFields := make(map[string]interface{})
+			for _, searchedField := range searchedFields {
+				dataWithSearchedFields[searchedField] = data.Data[searchedField]
+			}
+			result = append(result, dataWithSearchedFields)
+		}
+	}
+
+	return result
+}
+
 func (d *dataStorage) ReadAllKeys() []string {
 	result := make([]string, 0)
 

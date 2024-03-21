@@ -247,8 +247,8 @@ func (n *node) removeWithValues(values map[string]interface{}) (emptyItemsKeys [
 	return emptyItemsKeys
 }
 
-func (n *node) getWithConditions(cmp []*utils.Comparator) (keySet mapset.Set[string]) {
-	keysSet := mapset.NewSet[string]()
+func (n *node) getWithConditions(cmp []*utils.Comparator) (keysSet mapset.Set[string]) {
+	keysSet = mapset.NewSet[string]()
 
 	for _, item := range n.inodes {
 		isOk := true

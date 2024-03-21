@@ -35,8 +35,8 @@ func (c Comparator) Compare(value interface{}) bool {
 
 	case "lt":
 		switch value.(type) {
-		case int:
-			if value.(int) < c.Value.(int) {
+		case int64:
+			if value.(int64) < c.Value.(int64) {
 				return true
 			}
 		case float64:
@@ -47,8 +47,8 @@ func (c Comparator) Compare(value interface{}) bool {
 
 	case "le":
 		switch value.(type) {
-		case int:
-			if value.(int) <= c.Value.(int) {
+		case int64:
+			if value.(int64) <= c.Value.(int64) {
 				return true
 			}
 		case float64:
@@ -59,8 +59,8 @@ func (c Comparator) Compare(value interface{}) bool {
 
 	case "gt":
 		switch value.(type) {
-		case int:
-			if value.(int) > c.Value.(int) {
+		case int64:
+			if value.(int64) > c.Value.(int64) {
 				return true
 			}
 		case float64:
@@ -71,8 +71,8 @@ func (c Comparator) Compare(value interface{}) bool {
 
 	case "ge":
 		switch value.(type) {
-		case int:
-			if value.(int) >= c.Value.(int) {
+		case int64:
+			if value.(int64) >= c.Value.(int64) {
 				return true
 			}
 		case float64:
