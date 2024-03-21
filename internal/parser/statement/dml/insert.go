@@ -68,17 +68,6 @@ func (i *Insert) Prepare() {
 	if err != nil {
 		panic(err)
 	}
-
-	// // temporary measure
-	// fmt.Println("table name: ", i.tableName)
-	// fmt.Println("table schema: ", tableSchema)
-	// fmt.Println("collumns: ", columns)
-	// fmt.Println("values: ", values)
-
-	// for _, d := range i.data {
-	// 	fmt.Printf("table <%s>, insert <%v> type <%v>\n", i.tableName, d, reflect.TypeOf(d))
-	// }
-	// fmt.Println()
 }
 
 func (i *Insert) Execute() []map[string]interface{} {

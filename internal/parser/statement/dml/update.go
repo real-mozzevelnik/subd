@@ -28,7 +28,7 @@ func NewUpdate(db *db.DB, req string) *Update {
 }
 
 func (u *Update) Prepare() {
-	re := regexp.MustCompile(`\s*(?i)SET\s+`)
+	re := regexp.MustCompile(`[\s\(]*(?i)SET\s+`)
 	req := re.Split(u.request, -1)
 
 	if len(req) == 1 {
@@ -37,7 +37,9 @@ func (u *Update) Prepare() {
 	}
 
 	u.tableName = strings.Replace(req[0], " ", "", -1)
-	re = regexp.MustCompile(`\s+(?i)WHERE\s+`)
+	fmt.Println(u.tableName)
+
+	re = regexp.MustCompile(`[\s\)]+(?i)WHERE\s+`)
 	req = re.Split(req[1], -1)
 
 	if len(req) == 2 {

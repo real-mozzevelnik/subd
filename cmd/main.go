@@ -11,9 +11,9 @@ func main() {
 	database := createDB()
 	parser := parser.New(database)
 
-	timingTest(parser)
+	// timingTest(parser)
 
-	sql := `UPDATE users SET job = 'popa', age = 12 WHERE name == 'andrey';
+	sql := `UPDATE users (SET job = 'popa', age = 12) WHERE name == 'andrey';
 	 		UpDATE   users SeT job = 'voka', age = 16`
 	parser.Accept(sql)
 	parser.Execute()
