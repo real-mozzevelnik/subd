@@ -2,7 +2,6 @@ package dql
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -36,12 +35,15 @@ func NewSelect(db *db.DB, req string) *Select {
 }
 
 func (s *Select) Prepare() {
-	re := regexp.MustCompile(`(?i)SELECT\s+([^ ]*)\s+(?i)FROM\s+([^ ]*)(?:\s+(?i)WHERE\s+(.*))?`)
+	re := regexp.MustCompile(`([^ ]*)\s+(?i)FROM\s+([^ ]*)(?:\s+(?i)WHERE\s+(.*))?`)
 	match := re.FindStringSubmatch(s.request)
-	s.comparators = s.comparators[:0]
-	if len(match) == 0 {
-		panic("")
+
+	if len(match) < 3 {
+		err := fmt.Errorf("invalid select request: %s", s.request)
+		panic(err)
 	}
+
+	s.comparators = s.comparators[:0]
 	replacer := strings.NewReplacer("(", "", ")", "")
 
 	rawColumnNames := match[1]
@@ -49,7 +51,7 @@ func (s *Select) Prepare() {
 
 	s.tableName = match[2]
 
-	if len(match) > 3 && match[3] != "" {
+	if match[3] != "" {
 		rawWhereExpr := match[3]
 		whereExpr := strings.Split(rawWhereExpr, " ")
 		s.newWhereComparator(whereExpr)
@@ -102,12 +104,12 @@ func (s *Select) newWhereComparator(whereExpr []string) {
 	// adding comparator
 	s.comparators = append(s.comparators, utils.NewComparator(whereExpr[0], value, OperatorsMap[whereExpr[1]]))
 
-	fmt.Printf("from %s, Select fields: %s, values: <%v> typeof<%v>\n", s.tableName, s.searchedFields, value, reflect.TypeOf(value))
-	if len(s.comparators) > 0 {
-		for idx, c := range s.comparators {
-			fmt.Printf("comparator%d: %v\n", idx, c)
-		}
-	}
+	// fmt.Printf("from %s, Select fields: %s, values: <%v> typeof<%v>\n", s.tableName, s.searchedFields, value, reflect.TypeOf(value))
+	// if len(s.comparators) > 0 {
+	// 	for idx, c := range s.comparators {
+	// 		fmt.Printf("comparator%d: %v\n", idx, c)
+	// 	}
+	// }
 }
 
 func (s *Select) Execute() []map[string]interface{} {

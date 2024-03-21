@@ -21,20 +21,32 @@ func main() {
 			insert into users(name, age, job) values('sanya', 10, 'clown');
 			
 			insert into users(name, age, job) values('nikita', 90, 'ded');
-			
-			SELECT name, age FROM users where name == '10'
 	`
 
-	parser.Accept(sql)
-	data := parser.Execute()
+	// timingTest(parser)
 
-	// data := database.SelectWhere("popik", cmp, searchFields)
+	parser.Accept(sql)
+	parser.Execute()
+
+	// sqlSelect := `SELECT (name, age, job) FROM users`
+	sqlSelect := `CREATE INDEX users ON name`
+	parser.Accept(sqlSelect)
+	data := parser.Execute()
 	fmt.Println("\nResult set:")
 	for _, d := range data {
 		fmt.Printf("%v\n", d)
 	}
 
-	// timingTest(parser)
+	// sql = `DELETE name FROM users;`
+	// parser.Accept(sql)
+	// parser.Execute()
+
+	parser.Accept(sqlSelect)
+	data = parser.Execute()
+	fmt.Println("\nResult set:")
+	for _, d := range data {
+		fmt.Printf("%v\n", d)
+	}
 
 	dropDB(database)
 }
@@ -68,7 +80,7 @@ func timingTest(requestParser *parser.Parser) {
 
 	// SELECT WHERE
 
-	selWhereRequest := "SELECT name FROM users WHERE job == 'clown'"
+	selWhereRequest := "SELECT name FROM users WHERE name == 'clown'"
 	selWhereCount := 100
 
 	start = time.Now()
@@ -101,7 +113,7 @@ func createDB() *db.DB {
 func dropDB(database *db.DB) {
 	parser := parser.New(database)
 
-	sql := `drop table users;`
+	sql := `drop index users on name; drop table users;`
 	parser.Accept(sql)
 	parser.Execute()
 }

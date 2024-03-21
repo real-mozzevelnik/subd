@@ -58,5 +58,10 @@ func (p *Parser) prepare() error {
 		p.statementQueue = append(p.statementQueue, statement)
 	}
 
+	// for _, d := range subRequests {
+	// 	fmt.Println(d)
+	// }
+	// time.Sleep(time.Second * 2)
+
 	return nil
 }

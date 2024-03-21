@@ -1,6 +1,7 @@
 package statement
 
 import (
+	"fmt"
 	"strings"
 	"subd/internal/db"
 	"subd/internal/parser/statement/ddl"
@@ -14,23 +15,40 @@ type Statement interface {
 }
 
 func New(request string, database *db.DB) *Statement {
-	keyWord := strings.Fields(request)[0]
+	keyWords := strings.Fields(request)[:2]
 	var statement Statement
 
-	switch strings.ToLower(keyWord) {
+	switch strings.ToLower(keyWords[0]) {
 	case "select":
-		statement = dql.NewSelect(database, request)
+		statement = dql.NewSelect(database, request[7:])
 	case "insert":
-		statement = dml.NewInsert(database, request)
+		statement = dml.NewInsert(database, request[12:])
 	case "delete":
 		statement = dml.NewDelete(database, request)
 	case "update":
-		statement = dml.NewUpdate(database, request)
+		statement = dml.NewUpdate(database, request[7:])
 	case "create":
-		statement = ddl.NewCreate(database, request)
+		switch strings.ToLower(keyWords[1]) {
+		case "table":
+			statement = ddl.NewCreateTable(database, request[13:])
+		case "index":
+			statement = dql.NewCreateIndex(database, request[13:])
+		}
 	case "drop":
-		statement = ddl.NewDrop(database, request)
+		switch strings.ToLower(keyWords[1]) {
+		case "table":
+			statement = ddl.NewDropTable(database, request[11:])
+		case "index":
+			statement = dql.NewDropIndex(database, request[11:])
+		}
 	}
+
+	if statement == nil {
+		err := fmt.Errorf("invalid request: %s", request)
+		panic(err)
+	}
+
+	// fmt.Println(request[20:])
 
 	return &statement
 }

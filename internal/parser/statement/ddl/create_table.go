@@ -7,27 +7,26 @@ import (
 	"subd/internal/db"
 )
 
-type Create struct {
+type CreateTable struct {
 	dataBase  *db.DB
 	request   string
 	tableName string
 	schema    map[string]interface{}
 }
 
-func NewCreate(db *db.DB, req string) *Create {
-	return &Create{
+func NewCreateTable(db *db.DB, req string) *CreateTable {
+	return &CreateTable{
 		dataBase: db,
 		request:  req,
 		schema:   make(map[string]interface{}),
 	}
 }
 
-func (c *Create) Prepare() {
-	re := regexp.MustCompile(`(?i)CREATE\s+(?i)TABLE\s+(.*?)\s*[\s\(](.*?)\)`)
-
+func (c *CreateTable) Prepare() {
+	re := regexp.MustCompile(`(.*?)\s+[\s\(](.*?)\)`)
 	match := re.FindStringSubmatch(c.request)
 
-	if len(match) < 3 {
+	if len(match) != 3 {
 		fmt.Println(len(match))
 		for idx, d := range match {
 			fmt.Println(idx, d)
@@ -44,10 +43,10 @@ func (c *Create) Prepare() {
 		c.schema[fieldAndType[0]] = fieldAndType[1]
 	}
 
-	fmt.Printf("create table <%s> with: %v\n\n", c.tableName, data)
+	// fmt.Printf("create table <%s> with data: %v\n\n", c.tableName, data)
 }
 
-func (c *Create) Execute() []map[string]interface{} {
+func (c *CreateTable) Execute() []map[string]interface{} {
 	c.dataBase.Createtable(c.tableName, c.schema)
 	return nil
 }

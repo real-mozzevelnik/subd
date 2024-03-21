@@ -2,7 +2,6 @@ package dml
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,7 +24,8 @@ func NewInsert(db *db.DB, req string) *Insert {
 }
 
 func (i *Insert) Prepare() {
-	re := regexp.MustCompile(`(?i)INSERT\s+(?i)INTO\s+(.*?)\s*[\s\(](.*?)\)\s*(?i)VALUES\s*[\s\(](.*)\)`)
+	//re := regexp.MustCompile(`(?i)INSERT\s+(?i)INTO\s+(.*?)\s*[\s\(](.*?)\)\s*(?i)VALUES\s*[\s\(](.*)\)`)
+	re := regexp.MustCompile(`(.*?)\((.*?)\)\s*(?i)VALUES\((.*)\)`)
 	match := re.FindStringSubmatch(i.request)
 
 	i.tableName = match[1]
@@ -70,16 +70,16 @@ func (i *Insert) Prepare() {
 		panic(err)
 	}
 
-	// temporary measure
-	fmt.Println("table name: ", i.tableName)
-	fmt.Println("table schema: ", tableSchema)
-	fmt.Println("collumns: ", columns)
-	fmt.Println("values: ", values)
+	// // temporary measure
+	// fmt.Println("table name: ", i.tableName)
+	// fmt.Println("table schema: ", tableSchema)
+	// fmt.Println("collumns: ", columns)
+	// fmt.Println("values: ", values)
 
-	for _, d := range i.data {
-		fmt.Printf("table <%s>, insert <%v> type <%v>\n", i.tableName, d, reflect.TypeOf(d))
-	}
-	fmt.Println()
+	// for _, d := range i.data {
+	// 	fmt.Printf("table <%s>, insert <%v> type <%v>\n", i.tableName, d, reflect.TypeOf(d))
+	// }
+	// fmt.Println()
 }
 
 func (i *Insert) Execute() []map[string]interface{} {
