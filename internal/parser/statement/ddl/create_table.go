@@ -47,6 +47,6 @@ func (c *CreateTable) Prepare() {
 }
 
 func (c *CreateTable) Execute() []map[string]interface{} {
-	c.dataBase.Createtable(c.tableName, c.schema)
+	c.dataBase.CreateTable(c.tableName, c.schema)
 	return nil
 }

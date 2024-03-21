@@ -12,7 +12,7 @@ func NewDB() *DB {
 	}
 }
 
-func (db *DB) Createtable(name string, schema map[string]interface{}) {
+func (db *DB) CreateTable(name string, schema map[string]interface{}) {
 	db.tables[name] = newTable(name, schema)
 }
 
@@ -51,4 +51,12 @@ func (db *DB) Delete(tableName string) {
 
 func (db *DB) DeleteWhere(tableName string, cmp []utils.Comparator) {
 	db.tables[tableName].deleteDataWhere(cmp)
+}
+
+func (db *DB) Update(tableName string, newValues map[string]interface{}) {
+	db.tables[tableName].updateData(newValues)
+}
+
+func (db *DB) UpdateWhere(tableName string, newValues map[string]interface{}, cmp []utils.Comparator) {
+	db.tables[tableName].updateDataWhere(newValues, cmp)
 }

@@ -1,11 +1,9 @@
 package db
 
 import (
-	"fmt"
 	"runtime"
 	"subd/internal/utils"
 	"sync"
-	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/google/uuid"
@@ -54,8 +52,6 @@ func (t *table) selectData(searchedFields []string) []map[string]interface{} {
 }
 
 func (t *table) selectDataWhere(cmp []utils.Comparator, searchedFields []string) []map[string]interface{} {
-	start := time.Now()
-
 	areIndexesUsed := false
 	for _, comp := range cmp {
 		_, ok := t.indexes[comp.FieldName]
@@ -65,21 +61,28 @@ func (t *table) selectDataWhere(cmp []utils.Comparator, searchedFields []string)
 		}
 	}
 	if len(t.indexes) == 0 || !areIndexesUsed {
-		return t.dataStorage.ReadAllWhere(
-			func(row *Row) bool {
-				isOk := true
-				for _, comparator := range cmp {
-					if !comparator.Compare(row.Data[comparator.FieldName]) {
-						isOk = false
-						break
-					}
-				}
-				return isOk
-			},
-			searchedFields,
-		)
+		return t.selectDataWhereWithNoIndexSearch(cmp, searchedFields)
 	}
+	return t.selectDataWhereWithIndexSearch(cmp, searchedFields)
+}
 
+func (t *table) selectDataWhereWithNoIndexSearch(cmp []utils.Comparator, searchedFields []string) []map[string]interface{} {
+	return t.dataStorage.ReadAllWhere(
+		func(row *Row) bool {
+			isOk := true
+			for _, comparator := range cmp {
+				if !comparator.Compare(row.Data[comparator.FieldName]) {
+					isOk = false
+					break
+				}
+			}
+			return isOk
+		},
+		searchedFields,
+	)
+}
+
+func (t *table) selectDataWhereWithIndexSearch(cmp []utils.Comparator, searchedFields []string) []map[string]interface{} {
 	comporatorsSet := mapset.NewSet[*utils.Comparator]()
 	keySet, usedComporatorsFields := t.searchInIndexes(cmp)
 	for _, comporator := range cmp {
@@ -89,7 +92,7 @@ func (t *table) selectDataWhere(cmp []utils.Comparator, searchedFields []string)
 	}
 	unusedCmp := comporatorsSet.ToSlice()
 
-	r := t.dataStorage.ReadAllWhereWithGivenKeys(
+	return t.dataStorage.ReadAllWhereWithGivenKeys(
 		func(row *Row) bool {
 			isOk := true
 			for _, comparator := range unusedCmp {
@@ -103,10 +106,6 @@ func (t *table) selectDataWhere(cmp []utils.Comparator, searchedFields []string)
 		searchedFields,
 		keySet.ToSlice(),
 	)
-
-	elapsed := time.Since(start)
-	fmt.Println(elapsed)
-	return r
 }
 
 func (t *table) insertData(data map[string]interface{}) {
@@ -177,6 +176,115 @@ func (t *table) deleteDataWhere(cmp []utils.Comparator) {
 		}(idx)
 	}
 
+	wg.Wait()
+}
+
+func (t *table) updateData(newValues map[string]interface{}) {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		t.dataStorage.UpdateAll(newValues)
+	}()
+
+	for fieldName, _ := range newValues {
+		wg.Add(1)
+		go func(fieldName string) {
+			defer wg.Done()
+			_, ok := t.indexes[fieldName]
+			if !ok {
+				return
+			}
+
+			t.dropIndex(fieldName)
+			t.newIndex(fieldName)
+		}(fieldName)
+	}
+
+	wg.Wait()
+}
+
+func (t *table) updateDataWhere(newValues map[string]interface{}, cmp []utils.Comparator) {
+	areIndexesUsed := false
+	for _, comp := range cmp {
+		_, ok := t.indexes[comp.FieldName]
+		if ok {
+			areIndexesUsed = true
+			break
+		}
+	}
+
+	if (len(t.indexes) == 0) || !areIndexesUsed {
+		t.updateDataWhereWithNoIndexSearch(newValues, cmp)
+		return
+	}
+	t.updateDataWhereWithIndexSearch(newValues, cmp)
+}
+
+func (t *table) updateDataWhereWithNoIndexSearch(newValues map[string]interface{}, cmp []utils.Comparator) {
+	updatedKeys := t.dataStorage.UpdateAllWhere(
+		newValues,
+		func(row *Row) bool {
+			isOk := true
+			for _, comparator := range cmp {
+				if !comparator.Compare(row.Data[comparator.FieldName]) {
+					isOk = false
+					break
+				}
+			}
+			return isOk
+		},
+	)
+
+	t.updateIndexesValues(newValues, updatedKeys)
+}
+
+func (t *table) updateDataWhereWithIndexSearch(newValues map[string]interface{}, cmp []utils.Comparator) {
+	comporatorsSet := mapset.NewSet[*utils.Comparator]()
+	keySet, usedComporatorsFields := t.searchInIndexes(cmp)
+	for _, comporator := range cmp {
+		if !usedComporatorsFields.ContainsOne(comporator.FieldName) {
+			comporatorsSet.Add(&comporator)
+		}
+	}
+	unusedCmp := comporatorsSet.ToSlice()
+
+	updatedKeys := t.dataStorage.UpdateAllWhereWithGivenKeys(
+		newValues,
+		func(row *Row) bool {
+			isOk := true
+			for _, comparator := range unusedCmp {
+				if !comparator.Compare(row.Data[comparator.FieldName]) {
+					isOk = false
+					break
+				}
+			}
+			return isOk
+		},
+		keySet.ToSlice(),
+	)
+
+	t.updateIndexesValues(newValues, updatedKeys)
+}
+
+func (t *table) updateIndexesValues(newValues map[string]interface{}, updatedKeys []string) {
+	var wg sync.WaitGroup
+	for fieldName, newVal := range newValues {
+		wg.Add(1)
+		go func(fieldName string) {
+			defer wg.Done()
+			idx, ok := t.indexes[fieldName]
+			if !ok {
+				return
+			}
+
+			idx.tree.RemoveWithValues(updatedKeys)
+			for _, updatedKey := range updatedKeys {
+				idx.tree.Put(newVal, updatedKey)
+			}
+		}(fieldName)
+	}
 	wg.Wait()
 }
 
