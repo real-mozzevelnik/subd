@@ -1,11 +1,10 @@
 package dml
 
 import (
-	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"subd/internal/db"
+	"subd/internal/utils"
 )
 
 type Insert struct {
@@ -23,54 +22,37 @@ func NewInsert(db *db.DB, req string) *Insert {
 	}
 }
 
-func (i *Insert) Prepare() {
-	re := regexp.MustCompile(`(\w+)\((.*?)\)\s*(?i)VALUES\((.*)\)`)
+func (i *Insert) Prepare() (err error) {
+	re := regexp.MustCompile(`(\w+)[\s\(]+(.*?)[\)\s]\s*(?i)VALUES[\s\(]+(.*)[\)\s]$`)
 	match := re.FindStringSubmatch(i.request)
 
 	i.tableName = match[1]
-	columns := strings.Split(match[2], ",")
-
+	fields := strings.Split(match[2], ",")
 	values := strings.Split(match[3], ",")
 
-	tableSchema := i.dataBase.GetTableSchema(i.tableName)
-	replacer := strings.NewReplacer("\"", "", "'", "")
-
-	var err error
-	for idx, column := range columns {
-		switch tableSchema[column] {
-		case "TEXT":
-			{
-				if values[idx][0] == '"' || values[idx][0] == '\'' {
-					values[idx] = replacer.Replace(values[idx])
-					i.data[column] = values[idx]
-				} else {
-					err = fmt.Errorf("col <%s> has text type, but value isn't text: %v", column, values[idx])
-				}
-			}
-
-		case "INTEGER":
-			{
-				if values[idx][0] != '"' && values[idx][0] != '\'' {
-					// parse string to integer
-					i.data[column], _ = strconv.ParseInt(values[idx], 10, 0)
-				} else {
-					err = fmt.Errorf("col <%s> has int type, but value isn't int: %v", column, values[idx])
-				}
-			}
-
-		default:
-			{
-				err = fmt.Errorf("col <%s> has invalid type: %v", column, tableSchema[column])
-			}
-		}
-	}
-
-	if err != nil {
-		panic(err)
-	}
+	i.data, err = utils.FillTheData(fields, values, i.dataBase.GetTableSchema(i.tableName))
+	return err
 }
 
-func (i *Insert) Execute() []map[string]interface{} {
+func (i *Insert) Execute() (resultSet []map[string]interface{}, err error) {
 	i.dataBase.Insert(i.tableName, i.data)
-	return nil
+	return resultSet, err
 }
+
+// stableReplacer := strings.NewReplacer("(", "", ")", "")
+// re := regexp.MustCompile(`\s*(?i)VALUES\s*`)
+
+// splitByValues := re.Split(i.request, -1)
+
+// re = regexp.MustCompile(`([^( ]*)\s*(.*)`)
+// rawTableNameAndFields := re.FindStringSubmatch(splitByValues[0])
+
+// i.tableName = rawTableNameAndFields[1]
+
+// rawTableNameAndFields[2] = stableReplacer.Replace(rawTableNameAndFields[2])
+// fields := strings.Split(rawTableNameAndFields[2], ",")
+
+// rawValues := stableReplacer.Replace(splitByValues[1])
+// values := strings.Split(rawValues, ",")
+
+// i.data, err = utils.FillTheData(fields, values, i.dataBase.GetTableSchema(i.tableName))

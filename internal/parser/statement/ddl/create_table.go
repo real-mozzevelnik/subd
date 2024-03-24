@@ -1,7 +1,6 @@
 package ddl
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"subd/internal/db"
@@ -22,17 +21,9 @@ func NewCreateTable(db *db.DB, req string) *CreateTable {
 	}
 }
 
-func (c *CreateTable) Prepare() {
+func (c *CreateTable) Prepare() error {
 	re := regexp.MustCompile(`(.*?)\s+[\s\(](.*?)\)`)
 	match := re.FindStringSubmatch(c.request)
-
-	if len(match) != 3 {
-		fmt.Println(len(match))
-		for idx, d := range match {
-			fmt.Println(idx, d)
-		}
-		panic("invalid table creation request")
-	}
 
 	c.tableName = match[1]
 
@@ -43,10 +34,10 @@ func (c *CreateTable) Prepare() {
 		c.schema[fieldAndType[0]] = fieldAndType[1]
 	}
 
-	// fmt.Printf("create table <%s> with data: %v\n\n", c.tableName, data)
+	return nil
 }
 
-func (c *CreateTable) Execute() []map[string]interface{} {
-	c.dataBase.Createtable(c.tableName, c.schema)
-	return nil
+func (c *CreateTable) Execute() (resultSet []map[string]interface{}, err error) {
+	c.dataBase.CreateTable(c.tableName, c.schema)
+	return resultSet, err
 }

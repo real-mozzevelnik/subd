@@ -132,3 +132,51 @@ func (d *dataStorage) Delete(key string) {
 
 	delete(d.Collection, key)
 }
+
+func (d *dataStorage) UpdateAll(newValues map[string]interface{}) {
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
+
+	for _, v := range d.Collection {
+		for fieldName, newVal := range newValues {
+			v.Data[fieldName] = newVal
+		}
+	}
+}
+
+func (d *dataStorage) UpdateAllWhere(newValues map[string]interface{}, where func(row *Row) bool) (updatedKeys []string) {
+	updatedKeys = make([]string, 0)
+
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
+
+	for key, data := range d.Collection {
+		if where(data) {
+			for fieldName, newVal := range newValues {
+				data.Data[fieldName] = newVal
+			}
+			updatedKeys = append(updatedKeys, key)
+		}
+	}
+
+	return updatedKeys
+}
+
+func (d *dataStorage) UpdateAllWhereWithGivenKeys(newValues map[string]interface{}, where func(row *Row) bool, keys []string) (updatedKeys []string) {
+	updatedKeys = make([]string, 0)
+
+	d.Mutex.Lock()
+	defer d.Mutex.Unlock()
+
+	for _, key := range keys {
+		data := d.Collection[key]
+		if where(data) {
+			for fieldName, newVal := range newValues {
+				data.Data[fieldName] = newVal
+			}
+			updatedKeys = append(updatedKeys, key)
+		}
+	}
+
+	return updatedKeys
+}

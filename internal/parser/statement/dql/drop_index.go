@@ -1,7 +1,6 @@
 package dql
 
 import (
-	"fmt"
 	"regexp"
 	"subd/internal/db"
 )
@@ -20,20 +19,18 @@ func NewDropIndex(dataBase *db.DB, request string) *DropIndex {
 	}
 }
 
-func (d *DropIndex) Prepare() {
+func (d *DropIndex) Prepare() (err error) {
 	re := regexp.MustCompile(`(\w+)\s(?i)ON\s(\w+)`)
 	match := re.FindStringSubmatch(d.request)
 
-	fmt.Println("drop index")
-	for i, m := range match {
-		fmt.Printf("%d: %s\n", i, m)
-	}
-
 	d.tableName = match[1]
 	d.fieldName = match[2]
+
+	return err
 }
 
-func (d *DropIndex) Execute() []map[string]interface{} {
+func (d *DropIndex) Execute() (resultSet []map[string]interface{}, err error) {
 	d.dataBase.DropIndex(d.tableName, d.fieldName)
-	return nil
+
+	return resultSet, err
 }

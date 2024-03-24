@@ -19,7 +19,7 @@ func NewDropTable(db *db.DB, req string) *DropTable {
 	}
 }
 
-func (d *DropTable) Prepare() {
+func (d *DropTable) Prepare() error {
 	re := regexp.MustCompile(`(\w+)`)
 	match := re.FindStringSubmatch(d.request)
 
@@ -30,9 +30,10 @@ func (d *DropTable) Prepare() {
 	}
 
 	// fmt.Printf("drop table <%s>", d.tableName)
+	return nil
 }
 
-func (d *DropTable) Execute() []map[string]interface{} {
+func (d *DropTable) Execute() (resultSet []map[string]interface{}, err error) {
 	d.dataBase.DropTable(d.tableName)
-	return nil
+	return resultSet, err
 }

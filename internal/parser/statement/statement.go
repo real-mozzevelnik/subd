@@ -10,45 +10,62 @@ import (
 )
 
 type Statement interface {
-	Prepare()
-	Execute() []map[string]interface{}
+	Prepare() (err error)
+	Execute() (resultSet []map[string]interface{}, err error)
 }
 
-func New(request string, database *db.DB) *Statement {
-	keyWords := strings.Fields(request)[:2]
+func New(request string, database *db.DB) (newStatement *Statement, err error) {
 	var statement Statement
+	keyWords := strings.Fields(request)[:2]
 
 	switch strings.ToLower(keyWords[0]) {
 	case "select":
-		statement = dql.NewSelect(database, request[7:])
+		{
+			statement = dql.NewSelect(database, request[7:])
+		}
 	case "insert":
-		statement = dml.NewInsert(database, request[12:])
+		{
+			statement = dml.NewInsert(database, request[12:])
+		}
 	case "delete":
-		statement = dml.NewDelete(database, request[12:])
+		{
+			statement = dml.NewDelete(database, request[12:])
+		}
 	case "update":
-		statement = dml.NewUpdate(database, request[7:])
+		{
+			statement = dml.NewUpdate(database, request[7:])
+		}
 	case "create":
-		switch strings.ToLower(keyWords[1]) {
-		case "table":
-			statement = ddl.NewCreateTable(database, request[13:])
-		case "index":
-			statement = dql.NewCreateIndex(database, request[13:])
+		{
+			switch strings.ToLower(keyWords[1]) {
+			case "table":
+				{
+					statement = ddl.NewCreateTable(database, request[13:])
+				}
+			case "index":
+				{
+					statement = dql.NewCreateIndex(database, request[13:])
+				}
+			}
 		}
 	case "drop":
-		switch strings.ToLower(keyWords[1]) {
-		case "table":
-			statement = ddl.NewDropTable(database, request[11:])
-		case "index":
-			statement = dql.NewDropIndex(database, request[11:])
+		{
+			switch strings.ToLower(keyWords[1]) {
+			case "table":
+				{
+					statement = ddl.NewDropTable(database, request[11:])
+				}
+			case "index":
+				{
+					statement = dql.NewDropIndex(database, request[11:])
+				}
+			}
 		}
 	}
 
 	if statement == nil {
-		err := fmt.Errorf("invalid request: %s", request)
-		panic(err)
+		return nil, fmt.Errorf("invalid request: %s", request)
 	}
 
-	// fmt.Println(request[20:])
-
-	return &statement
+	return &statement, err
 }
