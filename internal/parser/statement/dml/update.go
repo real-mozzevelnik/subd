@@ -1,10 +1,10 @@
 package dml
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"subd/internal/db"
+	"subd/internal/parser/errors"
 	"subd/internal/utils"
 )
 
@@ -24,13 +24,9 @@ func NewUpdate(db *db.DB, req string) *Update {
 	}
 }
 
-func (u *Update) Prepare() (err error) {
-	var value interface{}
+func (u *Update) Prepare() *errors.Error {
 	req := regexp.MustCompile(`[\s\(]*(?i)SET\s+`).Split(u.request, -1)
-	if len(req) == 1 {
-		err := fmt.Errorf("invalid update request: %s", u.request)
-		panic(err)
-	}
+
 	u.tableName = strings.Replace(req[0], " ", "", -1)
 
 	req = regexp.MustCompile(`[\s\)]+(?i)WHERE\s+`).Split(req[1], -1)
@@ -41,33 +37,41 @@ func (u *Update) Prepare() (err error) {
 		cmp, err := utils.NewComparatorByWhereExpr(whereExpr, schema)
 
 		if err != nil {
-			return err
+			return &errors.Error{
+				Msg:  err.Error(),
+				Code: errors.INVALID_REQUEST,
+				Req:  u.request,
+			}
 		}
 
 		u.comparators = append(u.comparators, cmp)
-		fmt.Println(u.comparators[0].FieldName, u.comparators[0].Operation, u.comparators[0].Value)
 	}
 
 	rawSetExpr := strings.Split(req[0], ",")
-	re := regexp.MustCompile(`\s*=\s*`)
 	for _, expr := range rawSetExpr {
-		rawData := re.Split(expr, -1)
+		rawData := utils.SplitTrim(expr, "=", " ")
+		value, err := utils.TypeValidation(rawData[1], schema[rawData[0]])
 
-		if value, err = utils.TypeValidation(rawData[1], schema[rawData[0]]); err != nil {
-			return err
+		if err != nil {
+			return &errors.Error{
+				Msg:  err.Error(),
+				Code: errors.INVALID_REQUEST,
+				Req:  u.request,
+			}
 		}
 
-		u.data[rawData[1]] = value
+		u.data[rawData[0]] = value
 	}
-	return err
+
+	return nil
 }
 
-func (d *Update) Execute() (resultSet []map[string]interface{}, err error) {
+func (d *Update) Execute() (resultSet []map[string]interface{}, err *errors.Error) {
 	switch len(d.comparators) {
 	case 0:
 		d.dataBase.Update(d.tableName, d.data)
 	default:
 		d.dataBase.UpdateWhere(d.tableName, d.data, d.comparators)
 	}
-	return resultSet, err
+	return resultSet, nil
 }

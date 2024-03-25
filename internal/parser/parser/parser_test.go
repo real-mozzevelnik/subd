@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"subd/internal/db"
 	"testing"
 	"time"
@@ -10,7 +11,7 @@ func TestSelectStatement(t *testing.T) {
 	db := createDB()
 	parser := New(db)
 
-	sql := `select (name, age) from users`
+	sql := `select name, age from users`
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
@@ -66,7 +67,10 @@ func TestUpdateWhereStatement(t *testing.T) {
 
 	selectData(db, t)
 
-	parser.Accept("UPDATE users SET name = 'test' WHERE age == 10")
+	sql := "UPDATE users SET name = 'test' WHERE age == 10"
+	t.Logf("request: %s\n", sql)
+
+	parser.Accept(sql)
 	_, err := parser.Execute()
 	if err != nil {
 		panic(err)
@@ -81,7 +85,9 @@ func TestInsertStatement(t *testing.T) {
 
 	selectData(db, t)
 
-	sql := `INSERT INTO users(age, name) VALUES (15, "putin")`
+	sql := `INSERT INTO users(age, name) VALUES (15, "vadik")`
+	t.Logf("request: %s\n", sql)
+
 	parser.Accept(sql)
 	if _, err := parser.Execute(); err != nil {
 		panic(err)
@@ -97,6 +103,8 @@ func TestDeleteStatement(t *testing.T) {
 	selectData(db, t)
 
 	sql := `delete from users`
+	t.Logf("request: %s\n", sql)
+
 	parser.Accept(sql)
 	if _, err := parser.Execute(); err != nil {
 		panic(err)
@@ -112,6 +120,8 @@ func TestDeleteWhereStatement(t *testing.T) {
 	selectData(db, t)
 
 	sql := `delete from users where age > 25`
+	t.Logf("request: %s\n", sql)
+
 	parser.Accept(sql)
 	if _, err := parser.Execute(); err != nil {
 		panic(err)
@@ -124,7 +134,7 @@ func TestTiming(t *testing.T) {
 	database := createDB()
 	requestParser := New(database)
 
-	insRequest := "InSeRt InTo users	(name, age, job) VaLuEs		('Sanya', 10, 'dev');"
+	insRequest := `insert into users (name, age, job) values ('anton', 50, 'ded')`
 	insCount := 200000
 
 	start := time.Now()
@@ -148,7 +158,7 @@ func TestTiming(t *testing.T) {
 	elapsed = time.Since(start)
 	t.Logf("\n\n%d Select time execution (sec): %f. \n Select per second: %f", selCount, elapsed.Seconds(), float64(selCount)/elapsed.Seconds())
 
-	selWhereRequest := "SELECT name FROM users WHERE name == 'clown'"
+	selWhereRequest := "SELECT name FROM users WHERE age > 15"
 	selWhereCount := 100
 
 	start = time.Now()
@@ -165,23 +175,22 @@ func createDB() *db.DB {
 	database := db.NewDB()
 	parser := New(database)
 
-	sql := `
-		create table users (
-			name TEXT,
-			age INTEGER,
-			job TEXT
-		);
-		
-		insert into users(name, age, job) values('vadim', 54, 'antifriz');
+	sql := `create table users (name TEXT, age INTEGER, job TEXT)`
 
-		insert into users(name, age, job) values('andrey', 10, 'clown');
+	parser.Accept(sql)
+	_, err := parser.Execute()
+	if err != nil {
+		fmt.Println(err)
+		panic("")
+	}
 
-		insert into users(name, age, job) values('anton', 50, 'ded');
+	sql = `insert into users (name, age, job)   values ('andrey', 10, 'clown');
 
-		insert into users(name, age, job) values('sanya', 10, 'clown');
+	insert into users (name) values ('anton');
 
-		insert into users(name, age, job) values('nikita', 90, 'ded')
-	`
+	insert into users (name, age, job) values ('sanya', 10, 'clown');
+
+	insert into users (name, age, job) values ('nikita', 90, 'ded')`
 
 	parser.Accept(sql)
 	parser.Execute()
@@ -192,7 +201,7 @@ func createDB() *db.DB {
 func selectData(db *db.DB, t *testing.T) {
 	parser := New(db)
 
-	parser.Accept("SELECT name, age, job FROM users")
+	parser.Accept("SELECT (name, age, job) FROM users")
 	data, err := parser.Execute()
 
 	if err != nil {

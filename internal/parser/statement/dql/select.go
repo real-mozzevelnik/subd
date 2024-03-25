@@ -1,10 +1,10 @@
 package dql
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"subd/internal/db"
+	"subd/internal/parser/errors"
 	"subd/internal/utils"
 )
 
@@ -33,33 +33,29 @@ func NewSelect(db *db.DB, req string) *Select {
 	}
 }
 
-func (s *Select) Prepare() (err error) {
-	s.comparators = s.comparators[:0]
-	replacer := strings.NewReplacer("(", "", ")", "")
-	match := regexp.MustCompile(`([^ ]*)\s+(?i)FROM\s+([^ ]*)(?:\s+(?i)WHERE\s+(.*))?`).FindStringSubmatch(s.request)
+func (s *Select) Prepare() (err *errors.Error) {
+	match := regexp.MustCompile(`(.*)\s(?i)FROM\s+([^ ]*)(?:\s+(?i)WHERE\s+(.*))?`).FindStringSubmatch(s.request)
 
-	rawColumnNames := match[1]
-	s.searchedFields = strings.Split(replacer.Replace(rawColumnNames), ",")
-
+	s.searchedFields = utils.SplitTrim(match[1], ",", " ", "(", ")")
 	s.tableName = match[2]
 
 	if match[3] != "" {
-		rawWhereExpr := match[3]
-		whereExpr := strings.Split(rawWhereExpr, " ")
-		cmp, err := utils.NewComparatorByWhereExpr(whereExpr, s.dataBase.GetTableSchema(s.tableName))
+		cmp, err := utils.NewComparatorByWhereExpr(strings.Split(match[3], " "), s.dataBase.GetTableSchema(s.tableName))
 
 		if err != nil {
-			return fmt.Errorf("%s.\nOriginal Request: %s", err, s.request)
+			return &errors.Error{
+				Msg:  err.Error(),
+				Code: errors.INVALID_REQUEST,
+				Req:  s.request,
+			}
 		}
 
 		s.comparators = append(s.comparators, cmp)
 	}
-
-	return err
+	return nil
 }
 
-func (s *Select) Execute() (resultSet []map[string]interface{}, err error) {
-
+func (s *Select) Execute() (resSet []map[string]interface{}, err *errors.Error) {
 	switch len(s.comparators) {
 	case 0:
 		return s.dataBase.Select(s.tableName, s.searchedFields), nil

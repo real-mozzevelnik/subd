@@ -2,8 +2,8 @@ package dml
 
 import (
 	"regexp"
-	"strings"
 	"subd/internal/db"
+	"subd/internal/parser/errors"
 	"subd/internal/utils"
 )
 
@@ -22,37 +22,47 @@ func NewInsert(db *db.DB, req string) *Insert {
 	}
 }
 
-func (i *Insert) Prepare() (err error) {
-	re := regexp.MustCompile(`(\w+)[\s\(]+(.*?)[\)\s]\s*(?i)VALUES[\s\(]+(.*)[\)\s]$`)
+// users (name, age, job) VALUES ('bob', 12, 'clown')
+var re = regexp.MustCompile(`(\w+)\s*?\((.*?)\)\s*?(?i)VALUES\s*?\((.*)\)$`)
+
+func (i *Insert) Prepare() *errors.Error {
 	match := re.FindStringSubmatch(i.request)
 
+	if len(match) != 4 {
+		return &errors.Error{
+			Msg:  "invalid request",
+			Code: errors.INVALID_REQUEST,
+			Req:  i.request,
+		}
+	}
+
 	i.tableName = match[1]
-	fields := strings.Split(match[2], ",")
-	values := strings.Split(match[3], ",")
+	fields := utils.SplitTrim(match[2], ",", " ")
+	values := utils.SplitTrim(match[3], ",", " ")
 
+	if len(fields) != len(values) {
+		return &errors.Error{
+			Msg:  "Number of fields isn't equal to the numbere of values",
+			Code: errors.INVALID_REQUEST,
+			Req:  "INSERT INTO " + i.request,
+		}
+	}
+
+	var err error
 	i.data, err = utils.FillTheData(fields, values, i.dataBase.GetTableSchema(i.tableName))
-	return err
+
+	if err != nil {
+		return &errors.Error{
+			Msg:  err.Error(),
+			Code: errors.INVALID_REQUEST,
+			Req:  i.request,
+		}
+	}
+
+	return nil
 }
 
-func (i *Insert) Execute() (resultSet []map[string]interface{}, err error) {
+func (i *Insert) Execute() (resultSet []map[string]interface{}, err *errors.Error) {
 	i.dataBase.Insert(i.tableName, i.data)
-	return resultSet, err
+	return resultSet, nil
 }
-
-// stableReplacer := strings.NewReplacer("(", "", ")", "")
-// re := regexp.MustCompile(`\s*(?i)VALUES\s*`)
-
-// splitByValues := re.Split(i.request, -1)
-
-// re = regexp.MustCompile(`([^( ]*)\s*(.*)`)
-// rawTableNameAndFields := re.FindStringSubmatch(splitByValues[0])
-
-// i.tableName = rawTableNameAndFields[1]
-
-// rawTableNameAndFields[2] = stableReplacer.Replace(rawTableNameAndFields[2])
-// fields := strings.Split(rawTableNameAndFields[2], ",")
-
-// rawValues := stableReplacer.Replace(splitByValues[1])
-// values := strings.Split(rawValues, ",")
-
-// i.data, err = utils.FillTheData(fields, values, i.dataBase.GetTableSchema(i.tableName))

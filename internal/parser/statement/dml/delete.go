@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"subd/internal/db"
+	"subd/internal/parser/errors"
 	"subd/internal/utils"
 )
 
@@ -23,12 +24,13 @@ func NewDelete(db *db.DB, req string) *Delete {
 	}
 }
 
-func (d *Delete) Prepare() (err error) {
+func (d *Delete) Prepare() *errors.Error {
 	spaceReplacer := strings.NewReplacer(" ", "")
 
 	re := regexp.MustCompile(`\s+(?i)where\s+`)
 	splitByWhere := re.Split(d.request, -1)
 
+	var err error
 	switch len(splitByWhere) {
 	case 1:
 		{
@@ -41,21 +43,29 @@ func (d *Delete) Prepare() (err error) {
 			cmp, err := utils.NewComparatorByWhereExpr(whereExpr, d.dataBase.GetTableSchema(d.tableName))
 
 			if err != nil {
-				return fmt.Errorf("%s\nOriginal Request: %s", err, d.request)
+				break
 			}
 
 			d.comparators = append(d.comparators, cmp)
 		}
 	default:
 		{
-			return fmt.Errorf("invalid delete request: %s", d.request)
+			err = fmt.Errorf("invalid request")
+		}
+	}
+
+	if err != nil {
+		return &errors.Error{
+			Msg:  err.Error(),
+			Code: errors.INVALID_REQUEST,
+			Req:  d.request,
 		}
 	}
 
 	return nil
 }
 
-func (d *Delete) Execute() (resultSet []map[string]interface{}, err error) {
+func (d *Delete) Execute() (resultSet []map[string]interface{}, err *errors.Error) {
 	switch len(d.comparators) {
 	case 0:
 		d.dataBase.Delete(d.tableName)

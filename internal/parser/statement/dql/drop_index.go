@@ -3,6 +3,7 @@ package dql
 import (
 	"regexp"
 	"subd/internal/db"
+	"subd/internal/parser/errors"
 )
 
 type DropIndex struct {
@@ -19,18 +20,25 @@ func NewDropIndex(dataBase *db.DB, request string) *DropIndex {
 	}
 }
 
-func (d *DropIndex) Prepare() (err error) {
+func (d *DropIndex) Prepare() *errors.Error {
 	re := regexp.MustCompile(`(\w+)\s(?i)ON\s(\w+)`)
 	match := re.FindStringSubmatch(d.request)
+
+	if len(match) != 3 {
+		return &errors.Error{
+			Msg:  "Invalid request",
+			Code: errors.INVALID_REQUEST,
+			Req:  d.request,
+		}
+	}
 
 	d.tableName = match[1]
 	d.fieldName = match[2]
 
-	return err
+	return nil
 }
 
-func (d *DropIndex) Execute() (resultSet []map[string]interface{}, err error) {
+func (d *DropIndex) Execute() (resultSet []map[string]interface{}, err *errors.Error) {
 	d.dataBase.DropIndex(d.tableName, d.fieldName)
-
-	return resultSet, err
+	return resultSet, nil
 }

@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 	"subd/internal/db"
+	"subd/internal/parser/errors"
 )
 
 type CreateTable struct {
@@ -21,11 +22,19 @@ func NewCreateTable(db *db.DB, req string) *CreateTable {
 	}
 }
 
-func (c *CreateTable) Prepare() error {
-	re := regexp.MustCompile(`(.*?)\s+[\s\(](.*?)\)`)
+func (c *CreateTable) Prepare() *errors.Error {
+	re := regexp.MustCompile(`(.*)\s+[\s\(](.*?)\)`)
 	match := re.FindStringSubmatch(c.request)
 
-	c.tableName = match[1]
+	if len(match) != 3 {
+		return &errors.Error{
+			Msg:  "Invalid request",
+			Code: errors.INVALID_REQUEST,
+			Req:  c.request,
+		}
+	}
+
+	c.tableName = strings.Replace(match[1], " ", "", -1)
 
 	data := strings.Split(match[2], ",")
 
@@ -37,7 +46,7 @@ func (c *CreateTable) Prepare() error {
 	return nil
 }
 
-func (c *CreateTable) Execute() (resultSet []map[string]interface{}, err error) {
+func (c *CreateTable) Execute() (resultSet []map[string]interface{}, err *errors.Error) {
 	c.dataBase.CreateTable(c.tableName, c.schema)
-	return resultSet, err
+	return resultSet, nil
 }

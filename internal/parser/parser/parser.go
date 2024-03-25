@@ -4,14 +4,15 @@ import (
 	"strings"
 
 	"subd/internal/db"
+	"subd/internal/parser/errors"
 	"subd/internal/parser/statement"
+	"subd/internal/utils"
 )
 
 type Parser struct {
 	dataBase       *db.DB
 	originRequest  string
 	statementQueue []statement.Statement
-	err            chan error
 }
 
 func New(dataBase *db.DB) *Parser {
@@ -27,7 +28,7 @@ func (p *Parser) Accept(request string) {
 	p.splitRequestAndCreateQueue()
 }
 
-func (p *Parser) Execute() (resultSet []map[string]interface{}, err error) {
+func (p *Parser) Execute() (resultSet []map[string]interface{}, err *errors.Error) {
 	for _, statement := range p.statementQueue {
 		if err = statement.Prepare(); err != nil {
 			return nil, err
@@ -41,12 +42,12 @@ func (p *Parser) Execute() (resultSet []map[string]interface{}, err error) {
 }
 
 func (p *Parser) splitRequestAndCreateQueue() (err error) {
-	splitRequests := strings.Split(p.originRequest, ";")
+	splitRequests := utils.SplitTrim(p.originRequest, ";", "\t", "\n")
 
 	for _, request := range splitRequests {
 		statement, err := statement.New(request, p.dataBase)
 		if err != nil {
-			return err
+			panic(err)
 		}
 		p.statementQueue = append(p.statementQueue, *statement)
 	}
@@ -56,6 +57,5 @@ func (p *Parser) splitRequestAndCreateQueue() (err error) {
 
 func (p *Parser) clearRequestAndQueue() {
 	p.statementQueue = p.statementQueue[:0]
-	p.originRequest = strings.NewReplacer("\t", "", "\n", "", ", ", ",").Replace(p.originRequest)
 	p.originRequest = strings.TrimSuffix(p.originRequest, ";")
 }
