@@ -87,12 +87,12 @@ func NewComparatorByWhereExpr(whereExpr []string, tableSchema map[string]interfa
 	case "TEXT":
 		switch whereExpr[1] {
 		case "==", "!=":
-			if whereExpr[2][0] == '\'' && whereExpr[2][len(whereExpr)-1] == '\'' {
+			if whereExpr[2][0] == '\'' && whereExpr[2][len(whereExpr[2])-1] == '\'' {
 				value = strings.Replace(whereExpr[2], "'", "", -1)
 				break
 			}
 
-			if whereExpr[2][0] == '"' && whereExpr[2][len(whereExpr)-1] == '"' {
+			if whereExpr[2][0] == '"' && whereExpr[2][len(whereExpr[2])-1] == '"' {
 				value = strings.Replace(whereExpr[2], "\"", "", -1)
 				break
 			}
