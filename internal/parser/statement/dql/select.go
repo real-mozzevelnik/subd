@@ -8,14 +8,18 @@ import (
 	"subd/internal/utils"
 )
 
-var OperatorsMap = map[string]string{
-	"==": "eq",
-	"!=": "neq",
-	"<":  "lt",
-	"<=": "le",
-	">":  "gt",
-	">=": "ge",
-}
+var (
+	OperatorsMap = map[string]string{
+		"==": "eq",
+		"!=": "neq",
+		"<":  "lt",
+		"<=": "le",
+		">":  "gt",
+		">=": "ge",
+	}
+	regexpSelect = regexp.MustCompile(`(?s)(.*)\s(?i)FROM\s+([^\s]*)\s*?(?:\s+(?i)WHERE\s+(?s)(.*))?`)
+	whereRegexp  = regexp.MustCompile(`\s*?(\w+)\s*?([>!=<]+)\s*?([^ ]+)\s?`)
+)
 
 type Select struct {
 	dataBase       *db.DB
@@ -34,13 +38,46 @@ func NewSelect(db *db.DB, req string) *Select {
 }
 
 func (s *Select) Prepare() (err *errors.Error) {
-	match := regexp.MustCompile(`(.*)\s(?i)FROM\s+([^ ]*)(?:\s+(?i)WHERE\s+(.*))?`).FindStringSubmatch(s.request)
+	// fmt.Println("req:", s.request)
+	s.request = strings.NewReplacer("\t", " ", "\n", " ").Replace(s.request)
 
-	s.searchedFields = utils.SplitTrim(match[1], ",", " ", "(", ")")
-	s.tableName = match[2]
+	match := regexpSelect.FindStringSubmatch(s.request)
+
+	// for idx, v := range match {
+	// 	fmt.Println("match:", idx, v)
+	// }
+
+	// REFACTOR: check if exist table name
+	s.tableName = strings.Replace(match[2], " ", "", -1)
+	tableSchema := s.dataBase.GetTableSchema(s.tableName)
+
+	s.searchedFields = utils.SplitTrim(match[1], ",", " ", "\t", "\n", "(", ")")
+
+	for _, field := range s.searchedFields {
+		_, ok := tableSchema[field]
+		if !ok {
+			return &errors.Error{
+				Msg:  "Unknown field: " + field,
+				Code: errors.NOT_FOUND_DATA,
+				Req:  s.request,
+			}
+		}
+	}
+
+	// fmt.Println("table name:", s.tableName)
+	// fmt.Println("searched fields:", s.searchedFields)
 
 	if match[3] != "" {
-		cmp, err := utils.NewComparatorByWhereExpr(strings.Split(match[3], " "), s.dataBase.GetTableSchema(s.tableName))
+		condition := utils.FieldsN(match[3], 3)
+		condition[0] = strings.TrimPrefix(condition[0], "(")
+		condition[2] = strings.TrimSuffix(condition[2], ")")
+
+		// whereExpr := whereRegexp.FindStringSubmatch(condition)
+		cmp, err := utils.NewComparatorByWhereExpr(condition, tableSchema)
+
+		// fmt.Println(whereExpr[1])
+		// fmt.Println(whereExpr[2])
+		// fmt.Println(whereExpr[3])
 
 		if err != nil {
 			return &errors.Error{
@@ -51,7 +88,9 @@ func (s *Select) Prepare() (err *errors.Error) {
 		}
 
 		s.comparators = append(s.comparators, cmp)
+		// fmt.Println("comparators:", s.comparators)
 	}
+	// fmt.Println()
 	return nil
 }
 

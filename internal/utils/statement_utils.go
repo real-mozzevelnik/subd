@@ -15,19 +15,70 @@ var OperatorsMap = map[string]string{
 	">=": "ge",
 }
 
-// trim spaces and split by ',' sym
+// SplitTrim trim cutsets characters and split by sep string
+// if sep is space, returns slice length one with an origin string after trimming
 func SplitTrim(str, sep string, cutsets ...string) []string {
 	for _, cutset := range cutsets {
 		str = strings.Replace(str, cutset, "", -1)
 	}
-	return strings.Split(str, sep)
+	if sep != "" {
+		return strings.Split(str, sep)
+	} else {
+		return append(make([]string, 1), str)
+	}
 }
 
-// checks entered data for correctness of types and returned the map with them
+// FieldsN splits the string str around each instance of one or more space characters,
+// count elements in slice controls by second param elemNum
+func FieldsN(str string, elemNum int) []string {
+	if str == "" {
+		return nil
+	}
+
+	var word strings.Builder
+	res := make([]string, elemNum)
+
+	wordsCount := 0
+	idx := -1
+	for {
+		idx++
+		if str[idx] == ' ' || str[idx] == '\n' || str[idx] == '\t' {
+			continue
+		} else {
+			for {
+				if str[idx] == ' ' {
+					res[wordsCount] = word.String()
+					wordsCount++
+					word.Reset()
+					break
+				}
+				word.WriteByte(str[idx])
+				idx++
+				if idx > len(str)-1 {
+					return res
+				}
+			}
+			if wordsCount == elemNum {
+				return res
+			}
+		}
+		if idx > len(str)-1 {
+			return res
+		}
+	}
+}
+
+// FillTheData checks entered data for correctness of types
+// and returned the map with them
 func FillTheData(fields []string, values []string, tableSchema map[string]interface{}) (filledData map[string]interface{}, err error) {
 	filledData = make(map[string]interface{})
 
 	for idx, field := range fields {
+		_, ok := tableSchema[field]
+		if !ok {
+			return nil, fmt.Errorf("unknown field: <%s>", field)
+		}
+
 		filledData[field], err = TypeValidation(values[idx], tableSchema[field])
 		if err != nil {
 			return nil, err
@@ -109,8 +160,13 @@ func NewComparatorByWhereExpr(whereExpr []string, tableSchema map[string]interfa
 		// Logic to bool
 
 	default:
-		return Comparator{}, fmt.Errorf("unknown type field in where expression: %s can't supported", whereExpr[1])
+		return Comparator{}, fmt.Errorf("unknown type field in where expression: type %s can't supported", whereExpr[1])
 	}
 
 	return NewComparator(whereExpr[0], value, OperatorsMap[whereExpr[1]]), nil
+}
+
+func NewWhereExpr(condition string) []string {
+	///
+	return nil
 }

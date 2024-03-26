@@ -40,7 +40,7 @@ func (u *Update) Prepare() *errors.Error {
 			return &errors.Error{
 				Msg:  err.Error(),
 				Code: errors.INVALID_REQUEST,
-				Req:  u.request,
+				Req:  "UPDATE " + u.request,
 			}
 		}
 

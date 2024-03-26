@@ -7,6 +7,10 @@ import (
 	"subd/internal/utils"
 )
 
+var (
+	re = regexp.MustCompile(`(\w+)\s*?\((.*?)\)\s*?(?i)VALUES\s*?\((.*)\)$`)
+)
+
 type Insert struct {
 	dataBase  *db.DB
 	request   string
@@ -21,9 +25,6 @@ func NewInsert(db *db.DB, req string) *Insert {
 		data:     make(map[string]interface{}),
 	}
 }
-
-// users (name, age, job) VALUES ('bob', 12, 'clown')
-var re = regexp.MustCompile(`(\w+)\s*?\((.*?)\)\s*?(?i)VALUES\s*?\((.*)\)$`)
 
 func (i *Insert) Prepare() *errors.Error {
 	match := re.FindStringSubmatch(i.request)
@@ -55,7 +56,7 @@ func (i *Insert) Prepare() *errors.Error {
 		return &errors.Error{
 			Msg:  err.Error(),
 			Code: errors.INVALID_REQUEST,
-			Req:  i.request,
+			Req:  "INSERT INTO" + i.request,
 		}
 	}
 

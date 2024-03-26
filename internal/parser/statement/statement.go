@@ -7,6 +7,7 @@ import (
 	"subd/internal/parser/statement/ddl"
 	"subd/internal/parser/statement/dml"
 	"subd/internal/parser/statement/dql"
+	"subd/internal/utils"
 )
 
 type Statement interface {
@@ -16,37 +17,37 @@ type Statement interface {
 
 func New(request string, database *db.DB) (newStatement *Statement, err *errors.Error) {
 	var statement Statement
-	keyWords := strings.Fields(request)[:2]
+	keyWords := utils.FieldsN(request, 2)
 
 	switch strings.ToLower(keyWords[0]) {
 	case "select":
-		statement = dql.NewSelect(database, request[7:])
+		statement = dql.NewSelect(database, request[strings.Index(request, keyWords[0])+6:])
 
 	case "insert":
-		statement = dml.NewInsert(database, request[12:])
+		statement = dml.NewInsert(database, request[strings.Index(request, keyWords[1])+4:])
 
 	case "delete":
-		statement = dml.NewDelete(database, request[12:])
+		statement = dml.NewDelete(database, request[strings.Index(request, keyWords[0])+4:])
 
 	case "update":
-		statement = dml.NewUpdate(database, request[7:])
+		statement = dml.NewUpdate(database, request[strings.Index(request, keyWords[0])+6:])
 
 	case "create":
 		switch strings.ToLower(keyWords[1]) {
 		case "table":
-			statement = ddl.NewCreateTable(database, request[13:])
+			statement = ddl.NewCreateTable(database, request[strings.Index(request, keyWords[1])+6:])
 
 		case "index":
-			statement = dql.NewCreateIndex(database, request[13:])
+			statement = dql.NewCreateIndex(database, request[strings.Index(request, keyWords[1])+6:])
 		}
 
 	case "drop":
 		switch strings.ToLower(keyWords[1]) {
 		case "table":
-			statement = ddl.NewDropTable(database, request[11:])
+			statement = ddl.NewDropTable(database, request[strings.Index(request, keyWords[1])+6:])
 
 		case "index":
-			statement = dql.NewDropIndex(database, request[11:])
+			statement = dql.NewDropIndex(database, request[strings.Index(request, keyWords[1])+6:])
 		}
 	}
 

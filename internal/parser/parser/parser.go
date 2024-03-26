@@ -42,7 +42,7 @@ func (p *Parser) Execute() (resultSet []map[string]interface{}, err *errors.Erro
 }
 
 func (p *Parser) splitRequestAndCreateQueue() (err error) {
-	splitRequests := utils.SplitTrim(p.originRequest, ";", "\t", "\n")
+	splitRequests := utils.SplitTrim(p.originRequest, ";")
 
 	for _, request := range splitRequests {
 		statement, err := statement.New(request, p.dataBase)

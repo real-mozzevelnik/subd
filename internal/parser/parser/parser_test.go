@@ -29,7 +29,27 @@ func TestSelectWhereStatement(t *testing.T) {
 	db := createDB()
 	parser := New(db)
 
-	sql := `select (name, age) from users where age > 10`
+	sql := `
+	   SELECT (  
+			name, age, job  
+		)
+	FROM
+	    users   
+
+	WHERE 
+	(age >= 10)
+	
+	;`
+	// SeLecT 		name, 	age, 	job
+	// FRoM		 users	WhEre   name   ==    'loh'  ;
+
+	// SeLecT   name   ,    age
+	// ,   job   FRoM
+	//  users   WhEre
+	//  name
+	//  == 'loh'	;`
+
+	// SeLecT 		name, 	age, 	job 	FRoM		 users	WhEre   name   ==    'loh'  ;
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
