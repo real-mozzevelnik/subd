@@ -3,7 +3,6 @@ package socket_server
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -36,7 +35,7 @@ func (server *Server) Read() {
 			log.Println("socket_server: reader error: ", err)
 			break
 		}
-		fmt.Println(2)
+
 		if isPrefix {
 			server.LineData = append(server.LineData, lineData...)
 

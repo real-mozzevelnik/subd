@@ -2,25 +2,44 @@ package main
 
 import (
 	"encoding/json"
-	"strconv"
+	"strings"
+	"subd/internal/db"
+	"subd/internal/parser/parser"
 	"subd/internal/socket_server"
 )
 
+var database *db.DB = nil
+
 func main() {
+	database = db.NewDB()
+
 	socket_server.Handle("sql_statement", SqlStatementHandler)
+	socket_server.Handle("db_info", DBInfoHandler)
 	socket_server.ListenAndServe(":8090")
 }
 
 func SqlStatementHandler(data *json.RawMessage) (map[string]interface{}, error) {
-	resp := make(map[string]interface{})
-	for i := 0; i < 200000; i++ {
-		resp[strconv.Itoa(i)] = map[string]interface{}{
-			"testField1": i,
-			"testField2": strconv.Itoa(i),
-		}
+	var d map[string]interface{}
+	err := json.Unmarshal(*data, &d)
+	if err != nil {
+		return nil, err
 	}
 
-	return map[string]interface{}{
-		"test": resp,
-	}, nil
+	sql_statement := d["sql_statement"]
+	sql_statement = strings.ReplaceAll(sql_statement.(string), "\n", "")
+	requestParser := parser.New(database)
+	requestParser.Accept(sql_statement.(string))
+	resultSet, error := requestParser.Execute()
+	if error != nil {
+		return nil, error
+	}
+
+	response := make(map[string]interface{})
+	response["result"] = resultSet
+
+	return response, nil
+}
+
+func DBInfoHandler(data *json.RawMessage) (map[string]interface{}, error) {
+	return map[string]interface{}{}, nil
 }
