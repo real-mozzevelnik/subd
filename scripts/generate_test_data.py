@@ -47,7 +47,7 @@ def generate_users(sock):
     fake = Faker('en_US')
     for i in range(10000):
         name = fake.name()
-        age = fake.unique.random_int(min=1, max=10000)
+        age = fake.unique.random_int(min=1, max=100000)
         email = fake.email()
         job = fake.job()
         phone = fake.phone_number()
