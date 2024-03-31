@@ -25,6 +25,18 @@ func newTable(name string, schema map[string]interface{}) *table {
 	}
 }
 
+func (t *table) info() map[string]interface{} {
+	info := make(map[string]interface{})
+	info["schema"] = t.schema
+	info["length"] = len(t.dataStorage.Collection)
+	info["indexes"] = make([]string, 0)
+	for name, _ := range t.indexes {
+		info["indexes"] = append(info["indexes"].([]string), name)
+	}
+
+	return info
+}
+
 func (t *table) drop() {
 	for name, _ := range t.indexes {
 		t.dropIndex(name)
