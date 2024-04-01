@@ -12,6 +12,15 @@ func NewDB() *DB {
 	}
 }
 
+func (db *DB) Info() map[string]interface{} {
+	info := make(map[string]interface{})
+	for tableName, table := range db.tables {
+		info[tableName] = table.info()
+	}
+
+	return info
+}
+
 func (db *DB) CreateTable(name string, schema map[string]interface{}) {
 	db.tables[name] = newTable(name, schema)
 }

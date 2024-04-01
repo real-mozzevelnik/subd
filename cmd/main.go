@@ -41,5 +41,5 @@ func SqlStatementHandler(data *json.RawMessage) (map[string]interface{}, error) 
 }
 
 func DBInfoHandler(data *json.RawMessage) (map[string]interface{}, error) {
-	return map[string]interface{}{}, nil
+	return database.Info(), nil
 }
