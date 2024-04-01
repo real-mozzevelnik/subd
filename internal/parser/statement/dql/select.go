@@ -18,7 +18,6 @@ var (
 		">=": "ge",
 	}
 	regexpSelect = regexp.MustCompile(`(?s)(.*)\s(?i)FROM\s+([^\s]*)\s*?(?:\s+(?i)WHERE\s+(?s)(.*))?`)
-	whereRegexp  = regexp.MustCompile(`\s*?(\w+)\s*?([>!=<]+)\s*?([^ ]+)\s?`)
 )
 
 type Select struct {
@@ -69,15 +68,11 @@ func (s *Select) Prepare() (err *errors.Error) {
 
 	if match[3] != "" {
 		condition := utils.FieldsN(match[3], 3)
+
 		condition[0] = strings.TrimPrefix(condition[0], "(")
 		condition[2] = strings.TrimSuffix(condition[2], ")")
 
-		// whereExpr := whereRegexp.FindStringSubmatch(condition)
 		cmp, err := utils.NewComparatorByWhereExpr(condition, tableSchema)
-
-		// fmt.Println(whereExpr[1])
-		// fmt.Println(whereExpr[2])
-		// fmt.Println(whereExpr[3])
 
 		if err != nil {
 			return &errors.Error{

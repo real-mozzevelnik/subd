@@ -11,7 +11,7 @@ func TestSelectStatement(t *testing.T) {
 	db := createDB()
 	parser := New(db)
 
-	sql := `select name, age from users`
+	sql := `select name, age, salary, alive from users`
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
@@ -29,27 +29,7 @@ func TestSelectWhereStatement(t *testing.T) {
 	db := createDB()
 	parser := New(db)
 
-	sql := `
-	   SELECT (  
-			name, age, job  
-		)
-	FROM
-	    users   
-
-	WHERE 
-	(age >= 10)
-	
-	;`
-	// SeLecT 		name, 	age, 	job
-	// FRoM		 users	WhEre   name   ==    'loh'  ;
-
-	// SeLecT   name   ,    age
-	// ,   job   FRoM
-	//  users   WhEre
-	//  name
-	//  == 'loh'	;`
-
-	// SeLecT 		name, 	age, 	job 	FRoM		 users	WhEre   name   ==    'loh'  ;
+	sql := `select name, age, job, salary, alive FROM users WHERE salary > 10`
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
@@ -69,7 +49,9 @@ func TestUpdateStatement(t *testing.T) {
 
 	selectData(db, t)
 
-	sql := `update users set name = 'test', age = 0`
+	sql := "SELECT name, age, job, salary, alive FROM users"
+	parser.Accept(sql)
+
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
@@ -87,7 +69,7 @@ func TestUpdateWhereStatement(t *testing.T) {
 
 	selectData(db, t)
 
-	sql := "UPDATE users SET name = 'test' WHERE age == 10"
+	sql := "UPDATE users SET name = 'test' WHERE age > 10"
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
@@ -105,7 +87,10 @@ func TestInsertStatement(t *testing.T) {
 
 	selectData(db, t)
 
-	sql := `INSERT INTO users(age, name) VALUES (15, "vadik")`
+	sql := `INSERT INTO users(age, name, salary, alive) VALUES (15, "vadik", 12.2, f);
+	INSERT INTO users(age, name, salary, alive) VALUES (21, "bobik", 18.5, f);
+	INSERT INTO users(age, name) VALUES (90, "lena")`
+
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
@@ -195,7 +180,7 @@ func createDB() *db.DB {
 	database := db.NewDB()
 	parser := New(database)
 
-	sql := `create table users (name TEXT, age INTEGER, job TEXT)`
+	sql := `create table users (name TEXT, age INTEGER, job TEXT, salary FLOAT, alive BOOL)`
 
 	parser.Accept(sql)
 	_, err := parser.Execute()
@@ -204,13 +189,17 @@ func createDB() *db.DB {
 		panic("")
 	}
 
-	sql = `insert into users (name, age, job)   values ('andrey', 10, 'clown');
+	sql = `INSERT INTO users(age, name, salary, alive) VALUES (15, "vadik", 12.2, f);
+	INSERT INTO users(age, name, salary, alive) VALUES (21, "bobik", 18.5, f);
+	INSERT INTO users(age, name) VALUES (90, "lena")`
 
-	insert into users (name) values ('anton');
+	// sql = `insert into users (name, age, job, salary, alive)   values ('andrey', 10, 'clown', '12', false);
 
-	insert into users (name, age, job) values ('sanya', 10, 'clown');
+	// insert into users (name) values ('anton');
 
-	insert into users (name, age, job) values ('nikita', 90, 'ded')`
+	// insert into users (name, age, job) values ('sanya', 10, 'clown');
+
+	// insert into users (name, age, job) values ('nikita', 90, 'ded')`
 
 	parser.Accept(sql)
 	parser.Execute()
@@ -221,14 +210,14 @@ func createDB() *db.DB {
 func selectData(db *db.DB, t *testing.T) {
 	parser := New(db)
 
-	parser.Accept("SELECT (name, age, job) FROM users")
+	parser.Accept("SELECT name, age, job, salary, alive FROM users")
 	data, err := parser.Execute()
 
 	if err != nil {
 		t.Log(err)
 	} else {
-		for _, data := range data {
-			t.Log(data)
+		for idx, data := range data {
+			t.Logf("%d: %v\n", idx, data)
 		}
 	}
 	t.Log("____________")
