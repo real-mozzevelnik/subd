@@ -27,7 +27,7 @@ func New(request string, database *db.DB) (newStatement *Statement, err *errors.
 		statement = dml.NewInsert(database, request[strings.Index(request, keyWords[1])+4:])
 
 	case "delete":
-		statement = dml.NewDelete(database, request[strings.Index(request, keyWords[0])+4:])
+		statement = dml.NewDelete(database, request[strings.Index(request, keyWords[0])+11:])
 
 	case "update":
 		statement = dml.NewUpdate(database, request[strings.Index(request, keyWords[0])+6:])
@@ -53,7 +53,7 @@ func New(request string, database *db.DB) (newStatement *Statement, err *errors.
 
 	if statement == nil {
 		return nil, &errors.Error{
-			Msg:  "Unknown key words",
+			Msg:  "Unknown key word: " + keyWords[0] + " " + keyWords[1],
 			Code: errors.INVALID_REQUEST,
 			Req:  request,
 		}

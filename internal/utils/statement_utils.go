@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -32,6 +33,7 @@ func SplitTrim(str, sep string, cutsets ...string) []string {
 // count elements in slice controls by second param elemNum
 func FieldsN(str string, elemNum int) []string {
 	if str == "" {
+		log.Fatal("")
 		return nil
 	}
 
@@ -54,7 +56,9 @@ func FieldsN(str string, elemNum int) []string {
 				}
 				word.WriteByte(str[idx])
 				idx++
-				if idx > len(str)-1 {
+				if idx == len(str) {
+					res[wordsCount] = word.String()
+					wordsCount++
 					return res
 				}
 			}
@@ -62,7 +66,7 @@ func FieldsN(str string, elemNum int) []string {
 				return res
 			}
 		}
-		if idx > len(str)-1 {
+		if idx > len(str) {
 			return res
 		}
 	}
@@ -92,40 +96,42 @@ func TypeValidation(value string, typeValue interface{}) (convertedValue interfa
 	switch typeValue {
 	case "INTEGER":
 		convertedValue, err = strconv.ParseInt(value, 10, 0)
-		if err != nil {
-			return nil, fmt.Errorf("invalid type for <%s>. Field has INTEGER type, but value isn't", value)
-		}
+
+	case "BOOL":
+		convertedValue, err = strconv.ParseBool(value)
+
+	case "FLOAT":
+		convertedValue, err = strconv.ParseFloat(value, 64)
 
 	case "TEXT":
 		if value[0] == '\'' && value[len(value)-1] == '\'' {
 			convertedValue = strings.Replace(value, "'", "", -1)
 			break
 		}
-
 		if value[0] == '"' && value[len(value)-1] == '"' {
 			convertedValue = strings.Replace(value, "\"", "", -1)
 			break
 		}
-		return nil, fmt.Errorf("invalid type for <%s>.\nField has TEXT type, but value isn't", value)
-
-	case "BOOL":
-		return nil, fmt.Errorf("bool type isn't supported")
-
-	case "FLOAT":
-		return nil, fmt.Errorf("float type isn't supported")
+		err = fmt.Errorf("")
 
 	default:
 		return nil, fmt.Errorf("unknown type field for <%s>", value)
+	}
 
+	if err != nil {
+		return nil,
+			fmt.Errorf("invalid type for <%s>. Field has %s type, but value isn't", value, typeValue.(string))
 	}
 
 	return convertedValue, nil
 }
 
+// REFACTOR
 func NewComparatorByWhereExpr(whereExpr []string, tableSchema map[string]interface{}) (cmp Comparator, err error) {
 	if len(whereExpr) != 3 {
 		return Comparator{}, fmt.Errorf("invalid where expression: %s", whereExpr)
 	}
+	fmt.Println(whereExpr)
 
 	var value interface{}
 	switch tableSchema[whereExpr[0]] {
@@ -147,6 +153,7 @@ func NewComparatorByWhereExpr(whereExpr []string, tableSchema map[string]interfa
 				value = strings.Replace(whereExpr[2], "\"", "", -1)
 				break
 			}
+
 			return Comparator{}, fmt.Errorf("invalid type in where expression: %s.\nField has TEXT type, but value isn't", whereExpr)
 
 		default:
@@ -154,10 +161,16 @@ func NewComparatorByWhereExpr(whereExpr []string, tableSchema map[string]interfa
 		}
 
 	case "FLOAT":
-		// logic to float
+		value, err = strconv.ParseFloat(whereExpr[2], 64)
+		if err != nil {
+			return Comparator{}, fmt.Errorf("invalid type in where expression: %s\nField has FLOAT type, but value isn't", whereExpr)
+		}
 
 	case "BOOL":
-		// Logic to bool
+		value, err = strconv.ParseBool(whereExpr[2])
+		if err != nil {
+			return Comparator{}, fmt.Errorf("unknown type field in where expression: type %s can't supported", whereExpr[1])
+		}
 
 	default:
 		return Comparator{}, fmt.Errorf("unknown type field in where expression: type %s can't supported", whereExpr[1])

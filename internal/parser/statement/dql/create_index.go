@@ -35,6 +35,15 @@ func (d *CreateIndex) Prepare() *errors.Error {
 	d.tableName = match[1]
 	d.fieldName = match[2]
 
+	_, ok := d.dataBase.GetTableSchema(d.tableName)[d.fieldName]
+	if !ok {
+		return &errors.Error{
+			Msg:  "Unknown table: <" + d.tableName + "> or field: <" + d.fieldName + "> name",
+			Code: errors.NOT_FOUND_DATA,
+			Req:  d.request,
+		}
+	}
+
 	return nil
 }
 

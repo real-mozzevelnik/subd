@@ -41,6 +41,9 @@ func (i *Insert) Prepare() *errors.Error {
 	fields := utils.SplitTrim(match[2], ",", " ")
 	values := utils.SplitTrim(match[3], ",", " ")
 
+	// fmt.Println("fields:", fields)
+	// fmt.Println("values:", fields)
+
 	if len(fields) != len(values) {
 		return &errors.Error{
 			Msg:  "Number of fields isn't equal to the numbere of values",
@@ -51,6 +54,11 @@ func (i *Insert) Prepare() *errors.Error {
 
 	var err error
 	i.data, err = utils.FillTheData(fields, values, i.dataBase.GetTableSchema(i.tableName))
+
+	// fmt.Println("data:", i.data)
+	// for _, v := range i.data {
+	// 	fmt.Println(reflect.TypeOf(v), v)
+	// }
 
 	if err != nil {
 		return &errors.Error{

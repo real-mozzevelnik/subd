@@ -30,6 +30,9 @@ func (d *Delete) Prepare() *errors.Error {
 	re := regexp.MustCompile(`\s+(?i)where\s+`)
 	splitByWhere := re.Split(d.request, -1)
 
+	fmt.Println("d.request:", d.request)
+	fmt.Println(splitByWhere)
+
 	var err error
 	switch len(splitByWhere) {
 	case 1:
