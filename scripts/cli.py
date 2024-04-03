@@ -22,7 +22,7 @@ def get_n_send_query(sock):
         message = json.dumps(message) + "\n"
 
         sock.sendall(bytes(message, encoding="utf-8"))
-        received = sock.recv(1024*1024*1024)
+        received = sock.recv(1024*1024*1024*8)
         received = received.decode("utf-8")
         print(json.dumps(json.loads(received), indent=4))
 

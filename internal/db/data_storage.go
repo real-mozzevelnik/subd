@@ -48,6 +48,10 @@ func (d *dataStorage) ReadAllWhere(where func(row *Row) bool, searchedFields []s
 		if where(data) {
 			dataWithSearchedFields := make(map[string]interface{})
 			for _, searchedField := range searchedFields {
+				if searchedField == "*" {
+					dataWithSearchedFields = data.Data
+					break
+				}
 				dataWithSearchedFields[searchedField] = data.Data[searchedField]
 			}
 			result = append(result, dataWithSearchedFields)
@@ -68,6 +72,10 @@ func (d *dataStorage) ReadAllWhereWithGivenKeys(where func(row *Row) bool, searc
 		if where(data) {
 			dataWithSearchedFields := make(map[string]interface{})
 			for _, searchedField := range searchedFields {
+				if searchedField == "*" {
+					dataWithSearchedFields = data.Data
+					break
+				}
 				dataWithSearchedFields[searchedField] = data.Data[searchedField]
 			}
 			result = append(result, dataWithSearchedFields)
