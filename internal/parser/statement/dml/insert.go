@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	re = regexp.MustCompile(`(\w+)\s*?\((.*?)\)\s*?(?i)VALUES\s*?\((.*)\)$`)
+	re = regexp.MustCompile(`(\w+)\s*?\(((?s).*?)\)\s*?(?i)VALUES\s*?\(((?s).*)\)$`)
 )
 
 type Insert struct {
@@ -31,16 +31,24 @@ func (i *Insert) Prepare() *errors.Error {
 
 	if len(match) != 4 {
 		return &errors.Error{
-			Msg:  "invalid request",
+			Msg:  "unknown insert request syntax",
 			Code: errors.INVALID_REQUEST,
-			Req:  i.request,
+			Req:  "insert into " + i.request,
 		}
 	}
 
 	i.tableName = match[1]
-	fields := utils.SplitTrim(match[2], ",", " ")
-	values := utils.SplitTrim(match[3], ",", " ")
 
+	// is table with that name exist
+
+	fields := utils.SplitTrim(match[2], ",", " ", "\t", "\n")
+	values := utils.SplitTrim(match[3], ",", " ", "\t", "\n")
+
+	// for _, e := range fields {
+	// 	fmt.Printf("_%s_\n", e)
+	// }
+	// // fmt.Println()
+	// fmt.Println(values)
 	// fmt.Println("fields:", fields)
 	// fmt.Println("values:", fields)
 
@@ -48,7 +56,7 @@ func (i *Insert) Prepare() *errors.Error {
 		return &errors.Error{
 			Msg:  "Number of fields isn't equal to the numbere of values",
 			Code: errors.INVALID_REQUEST,
-			Req:  "INSERT INTO " + i.request,
+			Req:  "insert into " + i.request,
 		}
 	}
 

@@ -33,14 +33,20 @@ func (u *Update) Prepare() *errors.Error {
 	schema := u.dataBase.GetTableSchema(u.tableName)
 
 	if len(req) == 2 {
-		whereExpr := strings.Split(req[1], " ")
+		whereExpr := utils.SplitTrim(req[1], " ", "\t", "\n")
+
+		// fmt.Println("expr")
+		// for idx, e := range whereExpr {
+		// 	fmt.Printf("%d: _%s_\n", idx, e)
+		// }
+
 		cmp, err := utils.NewComparatorByWhereExpr(whereExpr, schema)
 
 		if err != nil {
 			return &errors.Error{
 				Msg:  err.Error(),
 				Code: errors.INVALID_REQUEST,
-				Req:  "UPDATE " + u.request,
+				Req:  "update " + u.request,
 			}
 		}
 
@@ -49,7 +55,7 @@ func (u *Update) Prepare() *errors.Error {
 
 	rawSetExpr := strings.Split(req[0], ",")
 	for _, expr := range rawSetExpr {
-		rawData := utils.SplitTrim(expr, "=", " ")
+		rawData := utils.SplitTrim(expr, "=", " ", "\t", "\n")
 		value, err := utils.TypeValidation(rawData[1], schema[rawData[0]])
 
 		if err != nil {

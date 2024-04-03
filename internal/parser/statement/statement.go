@@ -24,7 +24,7 @@ func New(request string, database *db.DB) (newStatement *Statement, err *errors.
 		statement = dql.NewSelect(database, request[strings.Index(request, keyWords[0])+6:])
 
 	case "insert":
-		statement = dml.NewInsert(database, request[strings.Index(request, keyWords[1])+4:])
+		statement = dml.NewInsert(database, request[strings.Index(request, keyWords[1])+5:])
 
 	case "delete":
 		statement = dml.NewDelete(database, request[strings.Index(request, keyWords[0])+11:])
@@ -44,7 +44,7 @@ func New(request string, database *db.DB) (newStatement *Statement, err *errors.
 	case "drop":
 		switch strings.ToLower(keyWords[1]) {
 		case "table":
-			statement = ddl.NewDropTable(database, request[strings.Index(request, keyWords[1])+6:])
+			statement = ddl.NewDropTable(database, request[strings.Index(request, keyWords[1])+5:])
 
 		case "index":
 			statement = dql.NewDropIndex(database, request[strings.Index(request, keyWords[1])+6:])

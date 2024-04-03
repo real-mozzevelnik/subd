@@ -1,10 +1,20 @@
 package ddl
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"subd/internal/db"
 	"subd/internal/parser/errors"
+)
+
+var (
+	availableVariables = map[string]bool{
+		"INTEGER": true,
+		"FLOAT":   true,
+		"TEXT":    true,
+		"BOOL":    true,
+	}
 )
 
 type CreateTable struct {
@@ -35,12 +45,31 @@ func (c *CreateTable) Prepare() *errors.Error {
 	}
 
 	c.tableName = strings.Replace(match[1], " ", "", -1)
-
 	data := strings.Split(match[2], ",")
 
 	for idx := 0; idx < len(data); idx++ {
-		fieldAndType := strings.Fields(data[idx])
-		c.schema[fieldAndType[0]] = fieldAndType[1]
+		fieldType := strings.Fields(data[idx])
+
+		if len(fieldType) != 2 {
+			return &errors.Error{
+				Msg:  fmt.Sprintf("incorrect expression: %s", fieldType),
+				Code: errors.INVALID_REQUEST,
+				Req:  "create table" + c.request,
+			}
+		}
+
+		switch fieldType[1] {
+		case "INTEGER", "FLOAT", "TEXT", "BOOL",
+			"integer", "float", "text", "bool":
+			c.schema[fieldType[0]] = fieldType[1]
+
+		default:
+			return &errors.Error{
+				Msg:  fmt.Sprintf("unknown type of variable: %s", fieldType[1]),
+				Code: errors.INVALID_REQUEST,
+				Req:  "create table" + c.request,
+			}
+		}
 	}
 
 	return nil

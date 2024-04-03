@@ -16,6 +16,34 @@ var OperatorsMap = map[string]string{
 	">=": "ge",
 }
 
+// CutSpacesFromEnds remove spaces from ends of string
+func CutSpacesFromEnds(str string) string {
+	if len(str) < 2 {
+		return str
+	}
+
+	var begin, end int
+	for idx := len(str) - 1; idx > 0; idx-- {
+		if str[idx] == ' ' || str[idx] == '\t' || str[idx] == '\n' || str[idx] == ';' {
+			continue
+		} else {
+			end = idx + 1
+			break
+		}
+	}
+
+	for idx := 0; idx < end; idx++ {
+		if str[idx] == ' ' || str[idx] == '\t' || str[idx] == '\n' {
+			continue
+		} else {
+			begin = idx
+			break
+		}
+	}
+
+	return str[begin:end]
+}
+
 // SplitTrim trim cutsets characters and split by sep string
 // if sep is space, returns slice length one with an origin string after trimming
 func SplitTrim(str, sep string, cutsets ...string) []string {
@@ -28,6 +56,34 @@ func SplitTrim(str, sep string, cutsets ...string) []string {
 		return append(make([]string, 1), str)
 	}
 }
+
+// func SplitTrim(str, sep string, cutsets ...byte) []string {
+// 	var buf strings.Builder
+// 	var badbit bool
+
+// 	for idx := 0; idx < len(str); idx++ {
+
+// 		for _, cutset := range cutsets {
+// 			if str[idx] == cutset {
+// 				badbit = true
+// 				break
+// 			}
+// 		}
+
+// 		if badbit {
+// 			badbit = false
+// 			continue
+// 		}
+
+// 		buf.WriteByte(str[idx])
+// 	}
+
+// 	if sep != "" {
+// 		return strings.Split(buf.String(), sep)
+// 	} else {
+// 		return append(make([]string, 1), buf.String())
+// 	}
+// }
 
 // FieldsN splits the string str around each instance of one or more space characters,
 // count elements in slice controls by second param elemNum
@@ -127,59 +183,73 @@ func TypeValidation(value string, typeValue interface{}) (convertedValue interfa
 }
 
 // REFACTOR
-func NewComparatorByWhereExpr(whereExpr []string, tableSchema map[string]interface{}) (cmp Comparator, err error) {
-	if len(whereExpr) != 3 {
-		return Comparator{}, fmt.Errorf("invalid where expression: %s", whereExpr)
+func NewComparatorByWhereExpr(expr []string, tableSchema map[string]interface{}) (cmp Comparator, err error) {
+	// for _, e := range expr {
+	// 	fmt.Printf("_%s_\n", e)
+	// }
+	if len(expr) != 3 {
+		return Comparator{}, fmt.Errorf("invalid where expression: %s", expr)
 	}
-	fmt.Println(whereExpr)
 
 	var value interface{}
-	switch tableSchema[whereExpr[0]] {
+	var cause, msg string
+
+	switch tableSchema[expr[0]] {
 	case "INTEGER":
-		value, err = strconv.ParseInt(whereExpr[2], 10, 0)
+		value, err = strconv.ParseInt(expr[2], 10, 0)
 		if err != nil {
-			return Comparator{}, fmt.Errorf("invalid type in where expression: %s\nField has INTEGER type, but value isn't", whereExpr)
+			cause = "type"
+			msg = "Field has INTEGER type, but value isn't"
 		}
 
 	case "TEXT":
-		switch whereExpr[1] {
+		switch expr[1] {
 		case "==", "!=":
-			if whereExpr[2][0] == '\'' && whereExpr[2][len(whereExpr[2])-1] == '\'' {
-				value = strings.Replace(whereExpr[2], "'", "", -1)
+			if expr[2][0] == '\'' && expr[2][len(expr[2])-1] == '\'' {
+				value = strings.Replace(expr[2], "'", "", -1)
 				break
 			}
 
-			if whereExpr[2][0] == '"' && whereExpr[2][len(whereExpr[2])-1] == '"' {
-				value = strings.Replace(whereExpr[2], "\"", "", -1)
+			if expr[2][0] == '"' && expr[2][len(expr[2])-1] == '"' {
+				value = strings.Replace(expr[2], "\"", "", -1)
 				break
 			}
 
-			return Comparator{}, fmt.Errorf("invalid type in where expression: %s.\nField has TEXT type, but value isn't", whereExpr)
+			cause = "type"
+			msg = "Field has TEXT type, but value isn't"
 
 		default:
-			return Comparator{}, fmt.Errorf("invalid operator in where expression: %s, TEXT can't be compared using it", whereExpr[1])
+			cause = "operator"
+			msg = "TEXT can't be compared using it"
 		}
 
 	case "FLOAT":
-		value, err = strconv.ParseFloat(whereExpr[2], 64)
+		value, err = strconv.ParseFloat(expr[2], 64)
 		if err != nil {
-			return Comparator{}, fmt.Errorf("invalid type in where expression: %s\nField has FLOAT type, but value isn't", whereExpr)
+			cause = "type"
+			msg = "Field has FLOAT type, but value isn't"
 		}
 
 	case "BOOL":
-		value, err = strconv.ParseBool(whereExpr[2])
+		value, err = strconv.ParseBool(expr[2])
 		if err != nil {
-			return Comparator{}, fmt.Errorf("unknown type field in where expression: type %s can't supported", whereExpr[1])
+			cause = "type"
+			msg = "Field has BOOL type, but value isn't"
 		}
 
 	default:
-		return Comparator{}, fmt.Errorf("unknown type field in where expression: type %s can't supported", whereExpr[1])
+		cause = "type"
+		msg = "Unknown type"
 	}
 
-	return NewComparator(whereExpr[0], value, OperatorsMap[whereExpr[1]]), nil
+	if err != nil {
+		return Comparator{}, fmt.Errorf("invalid %s in where expression: %s\n%s", cause, expr, msg)
+	}
+
+	return NewComparator(expr[0], value, OperatorsMap[expr[1]]), nil
 }
 
-func NewWhereExpr(condition string) []string {
+func Newexpr(condition string) []string {
 	///
 	return nil
 }

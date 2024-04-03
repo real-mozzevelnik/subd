@@ -10,26 +10,26 @@ import (
 )
 
 type Parser struct {
-	dataBase       *db.DB
-	originRequest  string
-	statementQueue []statement.Statement
+	dataBase *db.DB
+	request  string
+	queue    []statement.Statement
 }
 
 func New(dataBase *db.DB) *Parser {
 	return &Parser{
-		dataBase:       dataBase,
-		statementQueue: make([]statement.Statement, 0),
+		dataBase: dataBase,
+		queue:    make([]statement.Statement, 0),
 	}
 }
 
-func (p *Parser) Accept(request string) {
-	p.originRequest = request
+func (p *Parser) Accept(request string) (err *errors.Error) {
+	p.request = utils.CutSpacesFromEnds(request)
 	p.clearRequestAndQueue()
-	p.splitRequestAndCreateQueue()
+	return p.splitRequestAndCreateQueue()
 }
 
 func (p *Parser) Execute() (resultSet []map[string]interface{}, err *errors.Error) {
-	for _, statement := range p.statementQueue {
+	for _, statement := range p.queue {
 		if err = statement.Prepare(); err != nil {
 			return nil, err
 		}
@@ -41,21 +41,22 @@ func (p *Parser) Execute() (resultSet []map[string]interface{}, err *errors.Erro
 	return resultSet, nil
 }
 
-func (p *Parser) splitRequestAndCreateQueue() (err error) {
-	splitRequests := utils.SplitTrim(p.originRequest, ";")
+func (p *Parser) splitRequestAndCreateQueue() (err *errors.Error) {
+	splitRequests := utils.SplitTrim(p.request, ";")
 
 	for _, request := range splitRequests {
+		request = utils.CutSpacesFromEnds(request)
 		statement, err := statement.New(request, p.dataBase)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		p.statementQueue = append(p.statementQueue, *statement)
+		p.queue = append(p.queue, *statement)
 	}
 
 	return nil
 }
 
 func (p *Parser) clearRequestAndQueue() {
-	p.statementQueue = p.statementQueue[:0]
-	p.originRequest = strings.TrimSuffix(p.originRequest, ";")
+	p.queue = p.queue[:0]
+	p.request = strings.TrimSuffix(p.request, ";")
 }

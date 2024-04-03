@@ -2,7 +2,7 @@ package ddl
 
 import (
 	"fmt"
-	"regexp"
+	"strings"
 	"subd/internal/db"
 	"subd/internal/parser/errors"
 )
@@ -21,21 +21,25 @@ func NewDropTable(db *db.DB, req string) *DropTable {
 }
 
 func (d *DropTable) Prepare() *errors.Error {
-	re := regexp.MustCompile(`(\w+)`)
-	match := re.FindStringSubmatch(d.request)
-
-	if len(match) != 3 {
+	raw := strings.Fields(d.request)
+	if len(raw) != 1 {
 		return &errors.Error{
-			Msg:  "Invalid request",
+			Msg:  fmt.Sprintf("Invalid request: unknown instructions: %s", raw[1:]),
 			Code: errors.INVALID_REQUEST,
-			Req:  d.request,
+			Req:  "drop table" + d.request,
 		}
 	}
 
-	d.tableName = match[1]
+	d.tableName = raw[0]
+
+	// adding check is this table exist
+
 	if d.tableName == "" {
-		err := fmt.Errorf("invalid drop tabe requst: %s", d.tableName)
-		panic(err)
+		return &errors.Error{
+			Msg:  "table name isn't exist",
+			Code: errors.INVALID_REQUEST,
+			Req:  "drop table" + d.request,
+		}
 	}
 
 	return nil

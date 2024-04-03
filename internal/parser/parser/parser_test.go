@@ -29,7 +29,22 @@ func TestSelectWhereStatement(t *testing.T) {
 	db := createDB()
 	parser := New(db)
 
-	sql := `select name, age, job, salary, alive FROM users WHERE salary > 10`
+	selectData(db, t)
+
+	sql := `select 
+	name
+	
+	, 
+	 age
+	  ,
+	     job
+		   ,  
+		       salary   , alive
+	 FROM users WHERE salary 
+	 
+	    >
+		   10
+		   ;    `
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
@@ -49,7 +64,14 @@ func TestUpdateStatement(t *testing.T) {
 
 	selectData(db, t)
 
-	sql := "SELECT name, age, job, salary, alive FROM users"
+	sql := `update users 
+      set 
+	   name 
+	     =   
+		   'test'   , 
+		     age   =    0
+			   ;
+			 `
 	parser.Accept(sql)
 
 	t.Logf("request: %s\n", sql)
@@ -69,32 +91,15 @@ func TestUpdateWhereStatement(t *testing.T) {
 
 	selectData(db, t)
 
-	sql := "UPDATE users SET name = 'test' WHERE age > 10"
+	sql := `UPDATE users SET name = 'test'
+	  WHERE
+	     age > 10   
+		 `
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
 	_, err := parser.Execute()
 	if err != nil {
-		panic(err)
-	}
-
-	selectData(db, t)
-}
-
-func TestInsertStatement(t *testing.T) {
-	db := createDB()
-	parser := New(db)
-
-	selectData(db, t)
-
-	sql := `INSERT INTO users(age, name, salary, alive) VALUES (15, "vadik", 12.2, f);
-	INSERT INTO users(age, name, salary, alive) VALUES (21, "bobik", 18.5, f);
-	INSERT INTO users(age, name) VALUES (90, "lena")`
-
-	t.Logf("request: %s\n", sql)
-
-	parser.Accept(sql)
-	if _, err := parser.Execute(); err != nil {
 		panic(err)
 	}
 
@@ -133,6 +138,98 @@ func TestDeleteWhereStatement(t *testing.T) {
 	}
 
 	selectData(db, t)
+}
+
+func TestCreateDropTable(t *testing.T) {
+	db := db.NewDB()
+	parser := New(db)
+
+	t.Log(db.Info())
+	sql := `create table pozers (name TEXT, id float)`
+	t.Logf("request: %s\n", sql)
+
+	parser.Accept(sql)
+	if _, err := parser.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(db.Info())
+
+	sql = `drop table pozers`
+	t.Logf("request: %s\n", sql)
+
+	parser.Accept(sql)
+	if _, err := parser.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(db.Info())
+
+}
+
+func TestInsertStatement(t *testing.T) {
+	db := createDB()
+	parser := New(db)
+
+	selectData(db, t)
+
+	sql := `INSERT INTO users(age, name, salary, alive) VALUES (15, "vadik", 12.2, f);
+	
+	    INSERT INTO		 
+	              users(
+		 age 
+		  , name  	, 
+		  
+		 
+		  salary  ,
+		     alive    )
+			 
+			 VALUES   (   
+				 21, 
+				 
+				   "bobik", 
+				   18.5, f 
+				     	);
+	INSERT INTO users(age, name) VALUES (90, "lena");`
+
+	t.Logf("request: %s\n", sql)
+
+	parser.Accept(sql)
+	if _, err := parser.Execute(); err != nil {
+		panic(err)
+	}
+
+	selectData(db, t)
+}
+
+func TestIndex(t *testing.T) {
+	db := db.NewDB()
+	parser := New(db)
+
+	parser.Accept(`create table test_table (id integer, name text)`)
+	parser.Execute()
+
+	fmt.Println("data base info: ", db.Info())
+
+	sql := `create index test_table on name`
+	t.Logf("request: %s", sql)
+
+	parser.Accept(sql)
+	if _, err := parser.Execute(); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("data base info: ", db.Info())
+
+	sql = `drop index test_table on name`
+	t.Logf("request: %s\n", sql)
+
+	parser.Accept(sql)
+	if _, err := parser.Execute(); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("data base info: ", db.Info())
 }
 
 func TestTiming(t *testing.T) {
@@ -220,5 +317,5 @@ func selectData(db *db.DB, t *testing.T) {
 			t.Logf("%d: %v\n", idx, data)
 		}
 	}
-	t.Log("____________")
+	t.Log("-----------------")
 }
