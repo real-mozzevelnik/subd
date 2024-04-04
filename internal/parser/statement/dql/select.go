@@ -17,7 +17,7 @@ var (
 		">":  "gt",
 		">=": "ge",
 	}
-	regexpSelect = regexp.MustCompile(`(?s)(.*)\s(?i)FROM\s+([^\s]*)\s*?(?:\s+(?i)WHERE\s+(?s)(.*))?`)
+	regexpSelect = regexp.MustCompile(`(?s)(.*)\s(?i)FROM\s+([^\s]*)\s*?(?:\s+(?i)WHERE\s+((?s).*))?`)
 )
 
 type Select struct {
@@ -37,55 +37,44 @@ func NewSelect(db *db.DB, req string) *Select {
 }
 
 func (s *Select) Prepare() (err *errors.Error) {
-	// fmt.Println("req:", s.request)
+	// clear from trash
 	s.request = strings.NewReplacer("\t", " ", "\n", " ").Replace(s.request)
 
+	// used regular expression
 	match := regexpSelect.FindStringSubmatch(s.request)
 
-	// for idx, v := range match {
-	// 	fmt.Println("match:", idx, v)
-	// }
-
-	// REFACTOR: check if exist table name
 	s.tableName = strings.Replace(match[2], " ", "", -1)
-	tableSchema := s.dataBase.GetTableSchema(s.tableName)
-
 	s.searchedFields = utils.SplitTrim(match[1], ",", " ", "\t", "\n", "(", ")")
 
+	// get table schema by table name
+	tableSchema := s.dataBase.GetTableSchema(s.tableName)
 	for _, field := range s.searchedFields {
+		// checking whethet a field exists in the table
 		_, ok := tableSchema[field]
+
 		if !ok {
-			return &errors.Error{
-				Msg:  "Unknown field: " + field,
-				Code: errors.NOT_FOUND_DATA,
-				Req:  s.request,
+			// special case
+			if field == "*" {
+				continue
+			} else {
+
+				return &errors.Error{
+					Msg:  "Unknown field: " + field,
+					Code: errors.NOT_FOUND_DATA,
+					Req:  s.request,
+				}
 			}
 		}
 	}
-
-	// fmt.Println("table name:", s.tableName)
-	// fmt.Println("searched fields:", s.searchedFields)
 
 	if match[3] != "" {
-		condition := utils.FieldsN(match[3], 3)
-
-		condition[0] = strings.TrimPrefix(condition[0], "(")
-		condition[2] = strings.TrimSuffix(condition[2], ")")
-
-		cmp, err := utils.NewComparatorByWhereExpr(condition, tableSchema)
-
+		s.comparators, err = utils.ProcessWhereExpr(match[3], tableSchema)
 		if err != nil {
-			return &errors.Error{
-				Msg:  err.Error(),
-				Code: errors.INVALID_REQUEST,
-				Req:  s.request,
-			}
+			err.Req = "select " + s.request
+			return err
 		}
-
-		s.comparators = append(s.comparators, cmp)
-		// fmt.Println("comparators:", s.comparators)
 	}
-	// fmt.Println()
+
 	return nil
 }
 

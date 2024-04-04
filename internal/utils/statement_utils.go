@@ -3,8 +3,10 @@ package utils
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
+	"subd/internal/parser/errors"
 )
 
 var OperatorsMap = map[string]string{
@@ -56,34 +58,6 @@ func SplitTrim(str, sep string, cutsets ...string) []string {
 		return append(make([]string, 1), str)
 	}
 }
-
-// func SplitTrim(str, sep string, cutsets ...byte) []string {
-// 	var buf strings.Builder
-// 	var badbit bool
-
-// 	for idx := 0; idx < len(str); idx++ {
-
-// 		for _, cutset := range cutsets {
-// 			if str[idx] == cutset {
-// 				badbit = true
-// 				break
-// 			}
-// 		}
-
-// 		if badbit {
-// 			badbit = false
-// 			continue
-// 		}
-
-// 		buf.WriteByte(str[idx])
-// 	}
-
-// 	if sep != "" {
-// 		return strings.Split(buf.String(), sep)
-// 	} else {
-// 		return append(make([]string, 1), buf.String())
-// 	}
-// }
 
 // FieldsN splits the string str around each instance of one or more space characters,
 // count elements in slice controls by second param elemNum
@@ -148,18 +122,18 @@ func FillTheData(fields []string, values []string, tableSchema map[string]interf
 	return filledData, nil
 }
 
-func TypeValidation(value string, typeValue interface{}) (convertedValue interface{}, err error) {
+func TypeValidation(value string, typeValue interface{}) (convertedValue interface{}, ok error) {
 	switch typeValue {
-	case "INTEGER":
-		convertedValue, err = strconv.ParseInt(value, 10, 0)
-
-	case "BOOL":
-		convertedValue, err = strconv.ParseBool(value)
+	case "INTEGER", "integer":
+		convertedValue, ok = strconv.ParseInt(value, 10, 0)
 
 	case "FLOAT":
-		convertedValue, err = strconv.ParseFloat(value, 64)
+		convertedValue, ok = strconv.ParseFloat(value, 64)
 
-	case "TEXT":
+	case "BOOL", "bool":
+		convertedValue, ok = strconv.ParseBool(value)
+
+	case "TEXT", "text":
 		if value[0] == '\'' && value[len(value)-1] == '\'' {
 			convertedValue = strings.Replace(value, "'", "", -1)
 			break
@@ -168,88 +142,104 @@ func TypeValidation(value string, typeValue interface{}) (convertedValue interfa
 			convertedValue = strings.Replace(value, "\"", "", -1)
 			break
 		}
-		err = fmt.Errorf("")
+		ok = fmt.Errorf("")
 
 	default:
 		return nil, fmt.Errorf("unknown type field for <%s>", value)
 	}
 
-	if err != nil {
-		return nil,
-			fmt.Errorf("invalid type for <%s>. Field has %s type, but value isn't", value, typeValue.(string))
+	if ok != nil {
+		return nil, fmt.Errorf("invalid type for <%s>. Field has %s type, but value isn't", value, typeValue.(string))
 	}
 
 	return convertedValue, nil
 }
 
-// REFACTOR
-func NewComparatorByWhereExpr(expr []string, tableSchema map[string]interface{}) (cmp Comparator, err error) {
-	// for _, e := range expr {
-	// 	fmt.Printf("_%s_\n", e)
-	// }
-	if len(expr) != 3 {
-		return Comparator{}, fmt.Errorf("invalid where expression: %s", expr)
+func ProcessWhereExpr(strExpr string, tableshema map[string]interface{}) (comparators []Comparator, err *errors.Error) {
+	if strExpr == "" {
+		return nil, &errors.Error{
+			Msg:  "empty where expression",
+			Code: errors.INVALID_REQUEST,
+		}
 	}
 
-	var value interface{}
-	var cause, msg string
+	strExpr = strings.TrimSuffix(strings.TrimPrefix(strExpr, "("), ")")
+	strExpr = TrimMultiplieSpaces(strExpr)
 
-	switch tableSchema[expr[0]] {
-	case "INTEGER":
-		value, err = strconv.ParseInt(expr[2], 10, 0)
+	re := regexp.MustCompile(`(?s)\s+(?i)(and)(?s)\s+`)
+	fieldsExpr := re.Split(strExpr, -1)
+
+	comparators = make([]Comparator, 0)
+	for _, elem := range fieldsExpr {
+		cmp, err := NewCompratorByExpr(elem, tableshema)
 		if err != nil {
-			cause = "type"
-			msg = "Field has INTEGER type, but value isn't"
+			return nil, err
 		}
 
-	case "TEXT":
-		switch expr[1] {
-		case "==", "!=":
-			if expr[2][0] == '\'' && expr[2][len(expr[2])-1] == '\'' {
-				value = strings.Replace(expr[2], "'", "", -1)
-				break
-			}
-
-			if expr[2][0] == '"' && expr[2][len(expr[2])-1] == '"' {
-				value = strings.Replace(expr[2], "\"", "", -1)
-				break
-			}
-
-			cause = "type"
-			msg = "Field has TEXT type, but value isn't"
-
-		default:
-			cause = "operator"
-			msg = "TEXT can't be compared using it"
-		}
-
-	case "FLOAT":
-		value, err = strconv.ParseFloat(expr[2], 64)
-		if err != nil {
-			cause = "type"
-			msg = "Field has FLOAT type, but value isn't"
-		}
-
-	case "BOOL":
-		value, err = strconv.ParseBool(expr[2])
-		if err != nil {
-			cause = "type"
-			msg = "Field has BOOL type, but value isn't"
-		}
-
-	default:
-		cause = "type"
-		msg = "Unknown type"
+		comparators = append(comparators, cmp)
 	}
 
-	if err != nil {
-		return Comparator{}, fmt.Errorf("invalid %s in where expression: %s\n%s", cause, expr, msg)
-	}
-
-	return NewComparator(expr[0], value, OperatorsMap[expr[1]]), nil
+	return comparators, nil
 }
 
-func Newexpr(condition string) []string {
-	///
-	return nil
+func NewCompratorByExpr(expr string, tableschema map[string]interface{}) (Comparator, *errors.Error) {
+	exprFields := SplitTrim(expr, " ", "\t", "\n")
+	if len(exprFields) != 3 {
+		return Comparator{}, &errors.Error{
+			Msg:  fmt.Sprintf("Incorrst where expr: %s", expr),
+			Code: errors.INVALID_REQUEST,
+		}
+	}
+
+	value, ok := TypeValidation(exprFields[2], tableschema[exprFields[0]])
+	if ok != nil {
+		return Comparator{}, &errors.Error{
+			Msg:  ok.Error(),
+			Code: errors.INVALID_REQUEST,
+		}
+	}
+
+	var msg string
+	switch exprFields[1] {
+	case ">=", "<=", ">", "<":
+		switch tableschema[exprFields[0]] {
+		case "TEXT", "text":
+			ok = fmt.Errorf("")
+			msg = fmt.Sprintf("this operator [%s] is not available for string comparison: %v", exprFields[1], exprFields)
+		}
+
+	case "!=", "==":
+		// all right
+
+	default:
+		ok = fmt.Errorf("")
+		msg = fmt.Sprintf("unknwon operator [%s] in: %v", exprFields[1], exprFields)
+	}
+
+	if ok != nil {
+		return Comparator{}, &errors.Error{
+			Msg:  msg,
+			Code: errors.INVALID_REQUEST,
+		}
+	}
+
+	return NewComparator(exprFields[0], value, OperatorsMap[exprFields[1]]), nil
+}
+
+func TrimMultiplieSpaces(str string) string {
+	var buf strings.Builder
+
+	strLen := len(str) - 1
+	for idx := 0; idx < strLen; idx++ {
+		if str[idx] == ' ' && str[idx+1] == ' ' {
+			continue
+		}
+		buf.WriteByte(str[idx])
+	}
+
+	if str[strLen] != ' ' {
+		buf.WriteByte(str[strLen])
+	}
+
+	return buf.String()
 }

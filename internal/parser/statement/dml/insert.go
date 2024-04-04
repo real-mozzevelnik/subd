@@ -37,20 +37,11 @@ func (i *Insert) Prepare() *errors.Error {
 		}
 	}
 
+	// TODO: adding checking whether a table exist with this name
 	i.tableName = match[1]
-
-	// is table with that name exist
 
 	fields := utils.SplitTrim(match[2], ",", " ", "\t", "\n")
 	values := utils.SplitTrim(match[3], ",", " ", "\t", "\n")
-
-	// for _, e := range fields {
-	// 	fmt.Printf("_%s_\n", e)
-	// }
-	// // fmt.Println()
-	// fmt.Println(values)
-	// fmt.Println("fields:", fields)
-	// fmt.Println("values:", fields)
 
 	if len(fields) != len(values) {
 		return &errors.Error{
@@ -62,11 +53,6 @@ func (i *Insert) Prepare() *errors.Error {
 
 	var err error
 	i.data, err = utils.FillTheData(fields, values, i.dataBase.GetTableSchema(i.tableName))
-
-	// fmt.Println("data:", i.data)
-	// for _, v := range i.data {
-	// 	fmt.Println(reflect.TypeOf(v), v)
-	// }
 
 	if err != nil {
 		return &errors.Error{

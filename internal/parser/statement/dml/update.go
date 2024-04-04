@@ -24,34 +24,13 @@ func NewUpdate(db *db.DB, req string) *Update {
 	}
 }
 
-func (u *Update) Prepare() *errors.Error {
+func (u *Update) Prepare() (err *errors.Error) {
 	req := regexp.MustCompile(`[\s\(]*(?i)SET\s+`).Split(u.request, -1)
 
 	u.tableName = strings.Replace(req[0], " ", "", -1)
 
 	req = regexp.MustCompile(`[\s\)]+(?i)WHERE\s+`).Split(req[1], -1)
 	schema := u.dataBase.GetTableSchema(u.tableName)
-
-	if len(req) == 2 {
-		whereExpr := utils.SplitTrim(req[1], " ", "\t", "\n")
-
-		// fmt.Println("expr")
-		// for idx, e := range whereExpr {
-		// 	fmt.Printf("%d: _%s_\n", idx, e)
-		// }
-
-		cmp, err := utils.NewComparatorByWhereExpr(whereExpr, schema)
-
-		if err != nil {
-			return &errors.Error{
-				Msg:  err.Error(),
-				Code: errors.INVALID_REQUEST,
-				Req:  "update " + u.request,
-			}
-		}
-
-		u.comparators = append(u.comparators, cmp)
-	}
 
 	rawSetExpr := strings.Split(req[0], ",")
 	for _, expr := range rawSetExpr {
@@ -67,6 +46,14 @@ func (u *Update) Prepare() *errors.Error {
 		}
 
 		u.data[rawData[0]] = value
+	}
+
+	if len(req) == 2 {
+		u.comparators, err = utils.ProcessWhereExpr(req[1], schema)
+		if err != nil {
+			err.Req = "update " + u.request
+			return err
+		}
 	}
 
 	return nil

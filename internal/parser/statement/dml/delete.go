@@ -1,7 +1,6 @@
 package dml
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"subd/internal/db"
@@ -24,16 +23,12 @@ func NewDelete(db *db.DB, req string) *Delete {
 	}
 }
 
-func (d *Delete) Prepare() *errors.Error {
+func (d *Delete) Prepare() (err *errors.Error) {
 	spaceReplacer := strings.NewReplacer(" ", "")
 
 	re := regexp.MustCompile(`\s+(?i)where\s+`)
 	splitByWhere := re.Split(d.request, -1)
 
-	fmt.Println("d.request:", d.request)
-	fmt.Println(splitByWhere)
-
-	var err error
 	switch len(splitByWhere) {
 	case 1:
 		{
@@ -42,27 +37,18 @@ func (d *Delete) Prepare() *errors.Error {
 	case 2:
 		{
 			d.tableName = spaceReplacer.Replace(splitByWhere[0])
-			whereExpr := strings.Fields(splitByWhere[1])
-			cmp, err := utils.NewComparatorByWhereExpr(whereExpr, d.dataBase.GetTableSchema(d.tableName))
-
-			if err != nil {
-				break
-			}
-
-			d.comparators = append(d.comparators, cmp)
+			d.comparators, err = utils.ProcessWhereExpr(splitByWhere[1], d.dataBase.GetTableSchema(d.tableName))
 		}
 	default:
 		{
-			err = fmt.Errorf("invalid request")
+			// TODO:z
+			err = &errors.Error{Msg: "len > 2"}
 		}
 	}
 
 	if err != nil {
-		return &errors.Error{
-			Msg:  err.Error(),
-			Code: errors.INVALID_REQUEST,
-			Req:  d.request,
-		}
+		err.Req = "delete from" + d.request
+		return err
 	}
 
 	return nil

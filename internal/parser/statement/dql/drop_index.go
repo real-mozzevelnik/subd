@@ -32,8 +32,8 @@ func (d *DropIndex) Prepare() *errors.Error {
 		}
 	}
 
-	d.tableName = match[1]
-	d.fieldName = match[2]
+	d.fieldName = match[1]
+	d.tableName = match[2]
 
 	_, ok := d.dataBase.GetTableSchema(d.tableName)[d.fieldName]
 	if !ok {

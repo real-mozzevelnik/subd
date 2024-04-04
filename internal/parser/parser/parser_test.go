@@ -11,7 +11,9 @@ func TestSelectStatement(t *testing.T) {
 	db := createDB()
 	parser := New(db)
 
-	sql := `select name, age, salary, alive from users`
+	selectData(db, t)
+	// sql := `select name, age, salary, alive from users`
+	sql := `select * from users`
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
@@ -31,20 +33,24 @@ func TestSelectWhereStatement(t *testing.T) {
 
 	selectData(db, t)
 
-	sql := `select 
-	name
-	
-	, 
-	 age
-	  ,
-	     job
-		   ,  
-		       salary   , alive
-	 FROM users WHERE salary 
-	 
-	    >
-		   10
-		   ;    `
+	// sql := `select
+	// name
+
+	// ,
+	//  age
+	//   ,
+	//      job
+	// 	   ,
+	// 	       salary   , alive
+	//  FROM users WHERE salary
+
+	//     >
+	// 	   10
+
+	// 	 AND age > 14
+	// 	 AND name != 'bobik'  ;    `
+
+	sql := `select name, age, job from users where (salary > 10 aNd age > 15)`
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
@@ -211,7 +217,7 @@ func TestIndex(t *testing.T) {
 
 	fmt.Println("data base info: ", db.Info())
 
-	sql := `create index test_table on name`
+	sql := `create index name on test_table`
 	t.Logf("request: %s", sql)
 
 	parser.Accept(sql)
@@ -221,7 +227,7 @@ func TestIndex(t *testing.T) {
 
 	fmt.Println("data base info: ", db.Info())
 
-	sql = `drop index test_table on name`
+	sql = `drop index name on test_table`
 	t.Logf("request: %s\n", sql)
 
 	parser.Accept(sql)
